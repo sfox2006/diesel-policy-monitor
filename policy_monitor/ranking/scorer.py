@@ -1,0 +1,367 @@
+"""
+Scoring and ranking engine — Australian Diesel Fuel Security edition.
+
+Four target areas:
+  (a) Australian diesel situation — availability, price, trades/contracts
+  (b) Supply chain changes for Australia's diesel trading partners
+      (Japan, Malaysia, Singapore, South Korea, Thailand)
+  (c) Public announcements by politicians or industry leaders from
+      those five countries or Australia regarding diesel and supply chains
+  (d) Policy developments regarding diesel and related supply chains
+      from Japan, Malaysia, Singapore, South Korea, Thailand
+
+Scoring dimensions
+──────────────────
+1. Source type bonus      primary +20 | secondary +8
+2. Topic bonus            specialist sources only (general media has topics=[])
+3. Keyword matches        title + summary scanned against priority patterns
+4. Negative patterns      suppress clear noise
+5. Recency bonus          published today +10 | yesterday +5
+6. Watchlist flag         upcoming events, reports, deadlines
+7. Statement flag         named leader public statement detected
+"""
+
+from __future__ import annotations
+
+import logging
+import re
+from datetime import datetime, timedelta, timezone
+
+from policy_monitor.collectors.models import PolicyItem
+
+logger = logging.getLogger(__name__)
+
+
+# ── Topic bonus — specialist sources only ─────────────────────────────────────
+# General media sources have topics=[] and rely purely on keyword matching.
+TOPIC_BONUS: dict[str, float] = {
+    "reserves_and_prices":    15.0,
+    "shipments":              15.0,
+    "partner_country":        12.0,
+    "supply_disruption":      12.0,
+    "policy_and_legislation": 10.0,
+}
+
+# ── Priority keyword patterns ──────────────────────────────────────────────────
+PRIORITY_PATTERNS: list[tuple[str, float]] = [
+
+    # ── (a) Australian diesel situation: availability, price, contracts ────────
+    (r"\bdiesel\b", 12.0),
+    (r"\bliquid fuel\w*", 12.0),
+    (r"\bfuel securit\w+", 12.0),
+    (r"\bdiesel reserve\w*", 15.0),
+    (r"\bfuel reserve\w*", 14.0),
+    (r"\bstrategic (petroleum )?reserve\w*", 14.0),
+    (r"\b90.day (reserve|obligation|stockholding)", 15.0),
+    (r"\bminimum stockholding obligation|mso\b", 15.0),
+    (r"\bfuel stockholding\w*", 14.0),
+    (r"\bpetroleum reserve\w*", 13.0),
+    (r"\bdiesel wholesale price\w*", 14.0),
+    (r"\bterminal gate price\w*", 14.0),
+    (r"\bstation outage\w*", 13.0),
+    (r"\bpetrol station.{0,20}(empty|out of stock|no diesel)", 13.0),
+    (r"\bfuel shortfall\w*", 14.0),
+    (r"\bfuel ship\w*", 13.0),
+    (r"\bfuel (contract|trade|deal|tender)\w*", 13.0),
+    (r"\bdiesel (contract|trade|deal|import|purchase)\w*", 14.0),
+    (r"\bfuel import\w*", 12.0),
+    (r"\bdistillate\w*", 11.0),
+    (r"\btanker arrival\w*", 13.0),
+    (r"\bfuel import terminal\w*", 13.0),
+    (r"\bbotany|geelong|fremantle|brisbane.{0,20}(fuel|terminal|tanker|diesel)", 12.0),
+    (r"\biea obligation\w*", 14.0),
+    (r"\baustralia.{0,30}90.day", 14.0),
+
+    # ── (b) Supply chain changes — trading partners ───────────────────────────
+
+    # Japan
+    (r"\bjapan.{0,50}(diesel|fuel|oil|reserve|refin|supply chain|export|import)", 14.0),
+    (r"\bjapan.{0,30}iea collective action", 15.0),
+    (r"\bjapan.{0,30}(strategic reserve release|spr release)", 15.0),
+    (r"\bjapan.{0,30}(diesel subsid|fuel subsid)", 13.0),
+    (r"\bjapan.{0,30}(refiner|refinery|refining)", 13.0),
+    (r"\bjapan.{0,30}(export ban|export cap|export restrict)", 14.0),
+    (r"\banre\b|agency for natural resources and energy", 13.0),
+    (r"\bjogmec\b", 13.0),
+    (r"\bmeti.{0,20}(fuel|oil|energy|diesel|reserve)", 13.0),
+
+    # Malaysia
+    (r"\bmalaysia.{0,50}(diesel|fuel|oil|reserve|refin|supply chain|export|import)", 14.0),
+    (r"\bpetronas\b", 13.0),
+    (r"\bmalaysia.{0,30}(diesel subsid|fuel subsid|price control)", 14.0),
+    (r"\bmalaysia.{0,30}(export ban|export cap|export restrict)", 14.0),
+    (r"\bmalaysia.{0,30}(refiner|refinery|refining)", 13.0),
+    (r"\bmalaysia.{0,30}supply chain", 13.0),
+
+    # Singapore
+    (r"\bsingapore.{0,50}(diesel|fuel|oil|reserve|refin|supply chain|export|import)", 14.0),
+    (r"\bsingapore.{0,30}australia.{0,30}(fuel|oil|supply|agreement|deal|contract)", 15.0),
+    (r"\bema singapore|energy market authority", 13.0),
+    (r"\bsingapore.{0,30}(bunker|refin|trading hub|oil hub)", 13.0),
+    (r"\bsingapore.{0,30}supply chain", 13.0),
+
+    # South Korea
+    (r"\b(south )?korea.{0,50}(diesel|fuel|oil|reserve|refin|supply chain|export|import)", 14.0),
+    (r"\bkorea.{0,30}iea collective action", 15.0),
+    (r"\bkorea.{0,30}(strategic reserve release|spr release)", 15.0),
+    (r"\bkorea.{0,30}(retail price cap|price control)", 14.0),
+    (r"\bkorea.{0,30}(export ban|export cap|export restrict)", 14.0),
+    (r"\bkorea.{0,30}(refiner|refinery|refining)", 13.0),
+    (r"\bknoc\b|korea national oil", 13.0),
+
+    # Thailand
+    (r"\bthailand.{0,50}(diesel|fuel|oil|reserve|refin|supply chain|export|import)", 14.0),
+    (r"\bptt\b|ptt plc", 13.0),
+    (r"\bthailand.{0,30}biodiesel blend", 14.0),
+    (r"\bthailand.{0,30}(export ban|ban on export|export restrict)", 14.0),
+    (r"\bthailand.{0,30}oil trader\w*", 13.0),
+    (r"\bthailand.{0,30}(refiner|refinery|refining)", 13.0),
+    (r"\bthailand.{0,30}supply chain", 13.0),
+
+    # ── Geopolitical / shipping route signals ─────────────────────────────────
+    (r"\bstrait of hormuz|hormuz", 13.0),
+    (r"\bstrait of malacca|malacca strait", 13.0),
+    (r"\bsouth china sea.{0,30}(shipping|supply|oil|fuel)", 12.0),
+    (r"\bchoke point\w*", 11.0),
+    (r"\bshipping disruption\w*", 12.0),
+    (r"\bsupply disruption\w*", 12.0),
+    (r"\bsupply chain (disruption|risk|securit)", 11.0),
+    (r"\bport (congestion|disruption|closure)", 11.0),
+    (r"\btanker\w*", 9.0),
+    (r"\bbunkering\b", 9.0),
+    (r"\brefiner\w+", 9.0),
+    (r"\bcrude oil.{0,30}(price|supply|disruption|shortage)", 9.0),
+    (r"\biran.{0,30}(oil|fuel|strait|sanction|ceasefire)", 11.0),
+    (r"\bopec.{0,30}(cut|output|production|supply|decision)", 9.0),
+    (r"\biea collective action", 14.0),
+
+    # ── (c) & (d) Public statements and policy — Australian leaders ────────────
+    (r"\bchris bowen\b", 14.0),
+    (r"\bmadeleine king\b", 14.0),
+    (r"\bdon farrell\b", 12.0),
+    (r"\bjim chalmers\b", 11.0),
+    (r"\banthony albanese.{0,50}(fuel|energy|singapore|oil|supply|diesel)", 15.0),
+    (r"\balbanese.{0,30}singapore", 14.0),
+    (r"\bpm.{0,20}(fuel|energy|diesel|supply|singapore)", 12.0),
+    (r"\bminister (for|of) (energy|resources|fuel|climate|trade)", 12.0),
+    (r"\bdccew\b", 12.0),
+    (r"\baemo\b.{0,30}(fuel|diesel|oil|reserve|supply)", 11.0),
+    (r"\baccc.{0,20}(fuel|diesel|price|petrol)", 11.0),
+    (r"\baustralia.{0,40}(fuel polic|fuel strateg|fuel plan|fuel secur)", 13.0),
+    (r"\bappropriation.{0,30}fuel securit", 15.0),
+    (r"\bfuel security response bill", 15.0),
+    (r"\bparliament.{0,20}(fuel|energy|diesel)", 10.0),
+    (r"\bsenate.{0,20}(fuel|energy|diesel)", 10.0),
+    (r"\baustralia.{0,30}singapore.{0,30}(agree|deal|mou|contract).{0,30}fuel", 15.0),
+
+    # ── (c) & (d) Public statements and policy — partner country leaders ───────
+    # Japan
+    (r"\bjapanese (prime minister|pm|minister|government|official).{0,50}(fuel|energy|oil|diesel|reserve|supply)", 14.0),
+    (r"\bishiba\b.{0,40}(fuel|energy|oil|diesel)", 13.0),
+    (r"\banre (director|chief|official|minister)", 13.0),
+
+    # Malaysia
+    (r"\banwar ibrahim\b.{0,50}(fuel|energy|oil|diesel|petronas|supply)", 14.0),
+    (r"\bmalaysian (prime minister|pm|minister|government|official).{0,50}(fuel|energy|oil|diesel|supply)", 14.0),
+    (r"\bpetronas (ceo|chief|executive|president|official)\b", 13.0),
+
+    # Singapore
+    (r"\blawrence wong\b.{0,50}(fuel|energy|oil|diesel|supply|australia)", 14.0),
+    (r"\bsingapore (prime minister|pm|minister|government|official).{0,50}(fuel|energy|oil|diesel|supply)", 14.0),
+
+    # South Korea
+    (r"\byoon.{0,10}(fuel|energy|oil|diesel|reserve|supply)", 13.0),
+    (r"\bkorean (prime minister|pm|minister|government|official).{0,50}(fuel|energy|oil|diesel|supply)", 14.0),
+    (r"\bknoc (ceo|chief|executive|president|official)\b", 13.0),
+
+    # Thailand
+    (r"\bpaetongtarn\b.{0,50}(fuel|energy|oil|diesel|ptt|supply)", 13.0),
+    (r"\bthai (prime minister|pm|minister|government|official).{0,50}(fuel|energy|oil|diesel|supply)", 14.0),
+    (r"\bptt (ceo|chief|executive|president|official)\b", 13.0),
+
+    # ── Watchlist / forward-looking ───────────────────────────────────────────
+    (r"\bupcoming (review|report|statement|decision|announcement)", 5.0),
+    (r"\bpublic consultation|call for submissions?", 5.0),
+    (r"\bdeadline|due date|closes?\b", 4.0),
+    (r"\bscheduled|forthcoming|expected to (publish|announc|release)", 4.0),
+    (r"\bcommittee hearing|senate hearing|parliamentary question", 5.0),
+    (r"\bbudget (2026|2027).{0,20}(fuel|energy|reserve|diesel)", 6.0),
+    (r"\boil market report|petroleum statistics", 5.0),
+    (r"\biea.{0,20}(report|release|update|outlook)", 5.0),
+]
+
+# ── Negative keywords — suppress clear noise ───────────────────────────────────
+NEGATIVE_PATTERNS: list[tuple[str, float]] = [
+    # EV / renewables noise
+    (r"\belectric (vehicle|truck|car|bus)\b", -10.0),
+    (r"\bev charging\b", -10.0),
+    (r"\bgreen (hydrogen|ammonia|energy)\b", -10.0),
+    (r"\bsolar (panel|farm|power)\b", -8.0),
+    (r"\bwind (farm|turbine|power)\b", -8.0),
+    (r"\brenewable energy.{0,20}(replace|eliminat|substitut)", -8.0),
+    # Crime / courts / unrelated domestic
+    (r"\bcorrupt\w*|obeid|prosecution|criminal charge|murder|manslaughter", -20.0),
+    (r"\bcourt (case|hearing|ruling|decision).{0,30}(?!fuel|oil|diesel|energy)", -10.0),
+    (r"\bnitrous oxide|drowning|poison|bail breach", -20.0),
+    # Media / entertainment / lifestyle
+    (r"\bfashion|clothing|apparel|layered piece\w*|tactile", -20.0),
+    (r"\bnasa\b.{0,30}(photo|image|picture|moon|space|artemis)", -20.0),
+    (r"\bpodcast\b", -12.0),
+    (r"\bbitcoin|crypto\w*|nft\b", -12.0),
+    (r"\btourism|restaurant\w*|visitor\w*|hotel\w*", -12.0),
+    (r"\bsports?\b.{0,20}(team|league|match|game|player|coach)", -15.0),
+    # Finance noise unrelated to energy
+    (r"\biron ore\b", -8.0),
+    (r"\bstock market.{0,20}(?!oil|energy|fuel)", -5.0),
+    (r"\breal estate|property market", -10.0),
+    # Other unrelated industrial
+    (r"\bfertiliz\w+", -8.0),
+    (r"\bsemiconductor\b", -8.0),
+    (r"\bhelium\b", -8.0),
+    (r"\bchip (manufactur|shortage|supply).{0,20}(?!oil|fuel|diesel)", -8.0),
+    # Fuel vouchers / retail promotions
+    (r"\bfuel voucher|petrol station promot", -15.0),
+    (r"\bpetrol price watch|weekly petrol price", -8.0),
+]
+
+# ── Watchlist patterns ────────────────────────────────────────────────────────
+WATCHLIST_PATTERNS: list[str] = [
+    r"\bupcoming (review|report|statement|decision|announcement)",
+    r"\bpublic consultation|call for submissions?",
+    r"\bdeadline|due date|closes?\b",
+    r"\bscheduled|forthcoming|expected to (publish|announc|release)",
+    r"\bcommittee hearing|senate hearing|parliamentary question",
+    r"\bbudget (2026|2027).{0,20}(fuel|energy|reserve|diesel)",
+    r"\boil market report|petroleum statistics",
+    r"\biea.{0,20}(report|release|update|outlook)",
+    r"\baip.{0,20}(weekly|report|data|price)",
+    r"\bbilateral (meeting|talks|summit).{0,40}(fuel|energy|oil|supply)",
+    r"\btrade (meeting|talks|forum).{0,40}(australia|fuel|energy)",
+    r"\bappropriation.{0,30}fuel securit",
+    r"\biea collective action",
+    r"\bexport (ban|cap|restrict).{0,20}(diesel|fuel|refined)",
+    r"\bplanned (release|announc|statement|review).{0,30}(fuel|energy|diesel)",
+    r"\bnext (week|month|quarter).{0,30}(fuel|energy|diesel|reserve)",
+]
+
+# ── Statement patterns — named leaders ────────────────────────────────────────
+AU_POLITICAL_LEADERS: list[str] = [
+    r"\banthony albanese\b",
+    r"\bchris bowen\b",
+    r"\bmadeleine king\b",
+    r"\bdon farrell\b",
+    r"\bjim chalmers\b",
+    r"\bpenny wong\b",
+    r"\bminister (for|of) (energy|resources|fuel|climate|trade)",
+    r"\bpm albanese\b",
+]
+
+AU_PUBLIC_SERVICE: list[str] = [
+    r"\bdccew\b.{0,30}(said|announced|released|confirmed|warned)",
+    r"\baemo\b.{0,30}(said|announced|released|confirmed|warned)",
+    r"\baccc\b.{0,30}(said|announced|released|confirmed|warned|found)",
+    r"\babs\b.{0,30}(data|statistics|report|release).{0,20}(fuel|energy|oil|diesel)",
+]
+
+AU_INDUSTRY_LEADERS: list[str] = [
+    r"\bappea\b.{0,30}(said|warned|called|released|chief|ceo)",
+    r"\baustralian institute of petroleum\b.{0,30}(said|warned|data|report)",
+    r"\bminerals council\b.{0,30}(said|warned|called|ceo|chief)",
+    r"\bnational farmers federation\b.{0,30}(said|warned|called).{0,30}(fuel|diesel|oil)",
+]
+
+FOREIGN_LEADERS: list[str] = [
+    r"\bjapanese (prime minister|pm|minister|official).{0,50}(fuel|energy|oil|diesel|reserve|supply)",
+    r"\bishiba\b.{0,40}(fuel|energy|oil|diesel)",
+    r"\banwar ibrahim\b.{0,50}(fuel|energy|oil|diesel|petronas|supply)",
+    r"\bmalaysian (prime minister|pm|minister|official).{0,50}(fuel|energy|oil|diesel|supply)",
+    r"\bpetronas (ceo|chief|executive|president)\b",
+    r"\blawrence wong\b.{0,50}(fuel|energy|oil|diesel|supply|australia)",
+    r"\bsingapore (prime minister|pm|minister|official).{0,50}(fuel|energy|oil|diesel|supply)",
+    r"\byoon.{0,10}(fuel|energy|oil|diesel|reserve|supply)",
+    r"\bkorean (prime minister|pm|minister|official).{0,50}(fuel|energy|oil|diesel|supply)",
+    r"\bknoc (ceo|chief|executive|president)\b",
+    r"\bpaetongtarn\b.{0,50}(fuel|energy|oil|diesel|ptt|supply)",
+    r"\bthai (prime minister|pm|minister|official).{0,50}(fuel|energy|oil|diesel|supply)",
+    r"\bptt (ceo|chief|executive|president)\b",
+]
+
+STATEMENT_PATTERNS: list[str] = (
+    AU_POLITICAL_LEADERS + AU_PUBLIC_SERVICE + AU_INDUSTRY_LEADERS + FOREIGN_LEADERS
+)
+
+
+def _compile_weighted(patterns: list[tuple[str, float]]) -> list[tuple[re.Pattern, float]]:
+    return [(re.compile(p, re.IGNORECASE), w) for p, w in patterns]
+
+
+def _compile(patterns: list[str]) -> list[re.Pattern]:
+    return [re.compile(p, re.IGNORECASE) for p in patterns]
+
+
+_COMPILED_PRIORITY = _compile_weighted(PRIORITY_PATTERNS)
+_COMPILED_NEGATIVE = _compile_weighted(NEGATIVE_PATTERNS)
+_COMPILED_WATCHLIST = _compile(WATCHLIST_PATTERNS)
+_COMPILED_STATEMENT = _compile(STATEMENT_PATTERNS)
+
+
+def score_item(item: PolicyItem) -> float:
+    """Compute a relevance score for a single PolicyItem."""
+    score = 0.0
+    text = f"{item.title} {item.summary}"
+
+    # 1. Source type bonus
+    if item.source_type == "primary":
+        score += 20.0
+    else:
+        score += 8.0
+
+    # 2. Topic bonus — specialist sources only
+    for topic in item.topics:
+        score += TOPIC_BONUS.get(topic, 0.0)
+
+    # 3. Positive keyword matches
+    for pattern, weight in _COMPILED_PRIORITY:
+        if pattern.search(text):
+            score += weight
+
+    # 4. Negative keyword adjustments
+    for pattern, weight in _COMPILED_NEGATIVE:
+        if pattern.search(text):
+            score += weight  # weight is negative
+
+    # 5. Recency bonus
+    if item.published:
+        age = datetime.now(timezone.utc) - item.published.astimezone(timezone.utc)
+        if age < timedelta(hours=24):
+            score += 10.0
+        elif age < timedelta(hours=48):
+            score += 5.0
+
+    # 6. Watchlist flag
+    for pattern in _COMPILED_WATCHLIST:
+        if pattern.search(text):
+            item.is_watchlist = True
+            break
+
+    # 7. Statement flag — named leader detected
+    for pattern in _COMPILED_STATEMENT:
+        if pattern.search(text):
+            item.is_statement = True
+            break
+
+    return max(0.0, min(score, 100.0))
+
+
+def rank_items(items: list[PolicyItem]) -> list[PolicyItem]:
+    """Score every item and return them sorted highest-first."""
+    for item in items:
+        item.score = score_item(item)
+
+    ranked = sorted(items, key=lambda x: x.score, reverse=True)
+    logger.info(
+        "Ranked %d items; top score: %.1f",
+        len(ranked),
+        ranked[0].score if ranked else 0,
+    )
+    return ranked
