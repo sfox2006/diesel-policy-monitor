@@ -1,9 +1,11 @@
-﻿name: Daily Policy Briefing
+name: Daily Policy Briefing
 
 on:
   schedule:
-    # 20:00 UTC = 06:00 AEST (winter) / 07:00 AEDT (summer) Sydney time
+    # GitHub schedules use UTC. These two runs straddle Sydney daylight saving;
+    # the check below only allows the 7am Australia/Sydney run to continue.
     - cron: '0 20 * * *'
+    - cron: '0 21 * * *'
   workflow_dispatch:  # Allow manual trigger from GitHub UI
 
 jobs:
@@ -16,16 +18,36 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Check Sydney run time
+        id: sydney_time
+        run: |
+          SHOULD_RUN=$(python - <<'PY'
+          from datetime import datetime
+          from zoneinfo import ZoneInfo
+          import os
+
+          if os.environ.get("GITHUB_EVENT_NAME") == "workflow_dispatch":
+              print("true")
+          else:
+              now = datetime.now(ZoneInfo("Australia/Sydney"))
+              print("true" if now.hour == 7 else "false")
+          PY
+          )
+          echo "should_run=${SHOULD_RUN}" >> "$GITHUB_OUTPUT"
+
       - name: Set up Python
+        if: steps.sydney_time.outputs.should_run == 'true'
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: '3.11'
           cache: 'pip'
 
       - name: Install dependencies
+        if: steps.sydney_time.outputs.should_run == 'true'
         run: pip install -r requirements.txt
 
       - name: Restore dedupe database
+        if: steps.sydney_time.outputs.should_run == 'true'
         uses: actions/cache@v4
         with:
           path: policy_monitor.db
@@ -34,6 +56,7 @@ jobs:
             dedupe-db-
 
       - name: Run daily briefing
+        if: steps.sydney_time.outputs.should_run == 'true'
         env:
           SMTP_HOST: ${{ secrets.SMTP_HOST }}
           SMTP_PORT: ${{ secrets.SMTP_PORT }}
@@ -41,4 +64,7 @@ jobs:
           SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
           EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
           EMAIL_TO: ${{ secrets.EMAIL_TO }}
+          MIN_RELEVANCE_SCORE: ${{ vars.MIN_RELEVANCE_SCORE || '25' }}
+          MAX_ITEM_AGE_HOURS: ${{ vars.MAX_ITEM_AGE_HOURS || '96' }}
+          REQUEST_DELAY: ${{ vars.REQUEST_DELAY || '0.2' }}
         run: python main.py

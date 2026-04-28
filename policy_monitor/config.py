@@ -52,6 +52,10 @@ TOP_DEVELOPMENTS: int = _get_int("TOP_DEVELOPMENTS", 5)
 WATCHLIST_ITEMS: int = _get_int("WATCHLIST_ITEMS", 3)
 TLDR_BULLETS: int = _get_int("TLDR_BULLETS", 6)
 
+# Drop scored items below this threshold before writing the briefing.
+# This keeps broad but weakly related feed items out of the final email.
+MIN_RELEVANCE_SCORE: float = _get_float("MIN_RELEVANCE_SCORE", 25.0)
+
 # Items with a publish date older than this are dropped before ranking.
 # HTML-scraped items with no publish date are kept (age cannot be determined).
 # Set to 0 to disable the filter entirely.

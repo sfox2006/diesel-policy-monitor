@@ -27,6 +27,7 @@ import logging
 import re
 from datetime import datetime, timedelta, timezone
 
+from policy_monitor import config
 from policy_monitor.collectors.models import PolicyItem
 
 logger = logging.getLogger(__name__)
@@ -224,6 +225,78 @@ NEGATIVE_PATTERNS: list[tuple[str, float]] = [
     (r"\bpetrol price watch|weekly petrol price", -8.0),
 ]
 
+
+# Hard relevance gate. Source/topic bonuses are useful only after the item proves
+# it is about diesel, refined liquid fuels, or a near-term supply risk.
+DIRECT_FUEL_PATTERNS: list[str] = [
+    r"\bdiesel\b",
+    r"\bgasoil\b",
+    r"\bdistillate\w*\b",
+    r"\bliquid fuel\w*\b",
+    r"\bmiddle distillate\w*\b",
+    r"\brefined (fuel|product|petroleum)\w*\b",
+    r"\bpetroleum product\w*\b",
+    r"\bfuel securit\w*\b",
+    r"\bfuel reserve\w*\b",
+    r"\bfuel stockholding\w*\b",
+    r"\bminimum stockholding obligation|mso\b",
+    r"\bterminal gate price\w*\b",
+]
+
+HARD_FUEL_PATTERNS: list[str] = [
+    r"\bdiesel\b",
+    r"\bgasoil\b",
+    r"\bdistillate\w*\b",
+    r"\bliquid fuel\w*\b",
+    r"\bmiddle distillate\w*\b",
+    r"\brefined (fuel|product|petroleum)\w*\b",
+    r"\bpetroleum product\w*\b",
+    r"\bfuel stockholding\w*\b",
+    r"\bminimum stockholding obligation|mso\b",
+    r"\bterminal gate price\w*\b",
+    r"\bfuel import\w*\b",
+]
+
+CORE_DIESEL_PATTERNS: list[str] = [
+    r"\bdiesel\b",
+    r"\bgasoil\b",
+    r"\bdistillate\w*\b",
+    r"\bmiddle distillate\w*\b",
+    r"\brefined (fuel|product|petroleum)\w*\b",
+    r"\bpetroleum product\w*\b",
+    r"\bterminal gate price\w*\b",
+]
+
+CONTEXTUAL_RELEVANCE_PATTERNS: list[str] = [
+    r"\baustralia\w*.{0,50}(fuel|diesel|petroleum|refin|import|stockholding|reserve|terminal gate)",
+    r"\b(japan|malaysia|singapore|south korea|korea|thailand).{0,50}(diesel|gasoil|fuel|petroleum|refin|export|import|reserve)",
+    r"\b(refiner|refinery|refining|tanker|bunkering|port).{0,40}(diesel|fuel|oil|petroleum|gasoil)",
+    r"\b(strait of hormuz|hormuz|strait of malacca|malacca strait|south china sea).{0,60}(diesel|fuel|oil|petroleum|tanker|shipping)",
+    r"\b(oil|fuel|diesel|petroleum).{0,50}(export ban|export cap|export restrict|reserve release|supply disruption|shortage)",
+]
+
+STRATEGIC_OIL_PATTERNS: list[str] = [
+    r"\bbrent crude oil\b.{0,50}(price|spot|futures|surge|rise|climb|fall)",
+    r"\bcrude oil\b.{0,50}(price|spot|futures|surge|rise|climb|fall|supply)",
+    r"\boil price\w*\b.{0,50}(surge|rise|climb|spike|shock|war|hormuz|iran)",
+    r"\boil shock\w*\b",
+    r"\bfuel cost\w*\b",
+    r"\bfuel supply\b",
+    r"\b(strait of hormuz|hormuz|strait of malacca|malacca strait).{0,80}(crisis|closure|reopen|blockade|shipping|route|supply|oil)",
+    r"\b(japan|malaysia|singapore|south korea|korea|thailand).{0,70}(crude oil|oil refiner|oil refinery|oil supply|oil import|oil export)",
+    r"\b(bitumen|construction|logistics|trucking|freight).{0,80}(fuel|oil|diesel|hormuz|supply)",
+]
+
+LOW_SIGNAL_WITHOUT_FUEL_PATTERNS: list[str] = [
+    r"\blng\b|\bliquefied natural gas\b|\bnatural gas\b|\bgas export\w*\b",
+    r"\bnuclear\b|\bsmall modular reactor\w*\b|\bmicroreactor\w*\b",
+    r"\belectricity\b|\bpower grid\b|\btransmission\b",
+    r"\bsolar\b|\bwind\b|\brenewable\w*\b|\boffshore wind\b",
+    r"\bhydrogen\b|\bammonia\b",
+    r"\bai\b|\bartificial intelligence\b|\bsemiconductor\w*\b",
+    r"\basx\b|\bstock\w*\b|\bshares?\b|\betf\w*\b|\bwall street\b|\bfinancial market\w*\b",
+]
+
 # ── Watchlist patterns ────────────────────────────────────────────────────────
 WATCHLIST_PATTERNS: list[str] = [
     r"\bupcoming (review|report|statement|decision|announcement)",
@@ -301,14 +374,75 @@ def _compile(patterns: list[str]) -> list[re.Pattern]:
 
 _COMPILED_PRIORITY = _compile_weighted(PRIORITY_PATTERNS)
 _COMPILED_NEGATIVE = _compile_weighted(NEGATIVE_PATTERNS)
+_COMPILED_DIRECT_FUEL = _compile(DIRECT_FUEL_PATTERNS)
+_COMPILED_HARD_FUEL = _compile(HARD_FUEL_PATTERNS)
+_COMPILED_CORE_DIESEL = _compile(CORE_DIESEL_PATTERNS)
+_COMPILED_CONTEXTUAL_RELEVANCE = _compile(CONTEXTUAL_RELEVANCE_PATTERNS)
+_COMPILED_STRATEGIC_OIL = _compile(STRATEGIC_OIL_PATTERNS)
+_COMPILED_LOW_SIGNAL = _compile(LOW_SIGNAL_WITHOUT_FUEL_PATTERNS)
 _COMPILED_WATCHLIST = _compile(WATCHLIST_PATTERNS)
 _COMPILED_STATEMENT = _compile(STATEMENT_PATTERNS)
+
+
+def _direct_fuel_hits(text: str) -> int:
+    return sum(1 for pattern in _COMPILED_DIRECT_FUEL if pattern.search(text))
+
+
+def _hard_fuel_hits(text: str) -> int:
+    return sum(1 for pattern in _COMPILED_HARD_FUEL if pattern.search(text))
+
+
+def _core_diesel_hits(text: str) -> int:
+    return sum(1 for pattern in _COMPILED_CORE_DIESEL if pattern.search(text))
+
+
+def _contextual_hits(text: str) -> int:
+    return sum(1 for pattern in _COMPILED_CONTEXTUAL_RELEVANCE if pattern.search(text))
+
+
+def _strategic_oil_hits(text: str) -> int:
+    return sum(1 for pattern in _COMPILED_STRATEGIC_OIL if pattern.search(text))
+
+
+def _passes_relevance_gate(item: PolicyItem, text: str) -> bool:
+    """
+    Return True when the item is specific enough for the diesel briefing.
+
+    Broad source feeds often publish adjacent energy, politics, finance, and
+    shipping stories. They should not get into the briefing from source/topic
+    points alone.
+    """
+    direct_hits = _direct_fuel_hits(text)
+    hard_hits = _hard_fuel_hits(text)
+    core_hits = _core_diesel_hits(text)
+    contextual_hits = _contextual_hits(text)
+    strategic_hits = _strategic_oil_hits(text)
+
+    if any(pattern.search(text) for pattern in _COMPILED_LOW_SIGNAL):
+        # A gas/LNG/electricity article with incidental "liquid fuels",
+        # "fuel security", or "fuel imports" mentions should not lead a
+        # diesel briefing unless it also names diesel/refined products.
+        return core_hits > 0
+
+    if direct_hits:
+        return True
+
+    if strategic_hits:
+        return True
+
+    # Let primary/official sources through on one strong contextual signal, but
+    # make secondary media/trade feeds prove a little more.
+    required_contextual_hits = 1 if item.source_type == "primary" else 2
+    return contextual_hits >= required_contextual_hits
 
 
 def score_item(item: PolicyItem) -> float:
     """Compute a relevance score for a single PolicyItem."""
     score = 0.0
     text = f"{item.title} {item.summary}"
+
+    if not _passes_relevance_gate(item, text):
+        return 0.0
 
     # 1. Source type bonus
     if item.source_type == "primary":
@@ -354,14 +488,18 @@ def score_item(item: PolicyItem) -> float:
 
 
 def rank_items(items: list[PolicyItem]) -> list[PolicyItem]:
-    """Score every item and return them sorted highest-first."""
+    """Score every item and return relevant items sorted highest-first."""
     for item in items:
         item.score = score_item(item)
 
-    ranked = sorted(items, key=lambda x: x.score, reverse=True)
+    ranked = sorted(
+        [item for item in items if item.score >= config.MIN_RELEVANCE_SCORE],
+        key=lambda x: x.score,
+        reverse=True,
+    )
     logger.info(
-        "Ranked %d items; top score: %.1f",
-        len(ranked),
+        "Ranked %d relevant items from %d collected; top score: %.1f",
+        len(ranked), len(items),
         ranked[0].score if ranked else 0,
     )
     return ranked

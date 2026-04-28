@@ -72,6 +72,8 @@ def collect_html(source: Source) -> list[PolicyItem]:
         if not title or not href:
             continue
 
+        summary = _extract_summary(row, title)
+
         item = PolicyItem(
             title=title,
             url=href,
@@ -80,7 +82,7 @@ def collect_html(source: Source) -> list[PolicyItem]:
             source_type=source.get("type", "secondary"),
             topics=list(source.get("topics", [])),
             published=None,   # HTML pages rarely expose structured dates
-            summary="",
+            summary=summary,
         )
         items.append(item)
 
@@ -99,7 +101,7 @@ def _extract_title_href(
     # Title
     title_tag = row.select_one(title_sel)
     if title_tag is None:
-        title_tag = row
+        return "", ""
     title = title_tag.get_text(strip=True)
 
     # Link
@@ -114,3 +116,13 @@ def _extract_title_href(
         href = urljoin(base_url, href)
 
     return title, href
+
+
+def _extract_summary(row: Tag, title: str) -> str:
+    """Extract a short listing snippet from a scraped row."""
+    text = row.get_text(" ", strip=True)
+    if not text:
+        return ""
+    if text.startswith(title):
+        text = text[len(title):].strip(" -–—|")
+    return " ".join(text.split())[:600]
