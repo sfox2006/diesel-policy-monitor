@@ -18,6 +18,7 @@ Workflow:
 from __future__ import annotations
 
 import logging
+import os
 import sys
 import traceback
 from datetime import datetime, timezone
@@ -87,6 +88,8 @@ def run() -> None:
     except Exception:
         logger.error("Email send failed — briefing is still saved locally.")
         logger.error(traceback.format_exc())
+        if os.environ.get("FAIL_ON_EMAIL_ERROR", "").lower() in {"1", "true", "yes"}:
+            raise
 
     elapsed = (datetime.now(timezone.utc) - start).total_seconds()
     logger.info("=" * 70)

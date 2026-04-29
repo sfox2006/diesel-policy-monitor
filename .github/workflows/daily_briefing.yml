@@ -2,8 +2,8 @@ name: Daily Policy Briefing
 
 on:
   schedule:
-    # GitHub schedules use UTC. These two runs straddle Sydney daylight saving;
-    # the check below only allows the 7am Australia/Sydney run to continue.
+    # GitHub schedules use UTC. These two runs straddle Sydney daylight saving:
+    # 20:00 UTC = 07:00 Sydney during daylight saving, 21:00 UTC = 07:00 otherwise.
     - cron: '0 20 * * *'
     - cron: '0 21 * * *'
   workflow_dispatch:  # Allow manual trigger from GitHub UI
@@ -20,6 +20,8 @@ jobs:
 
       - name: Check Sydney run time
         id: sydney_time
+        env:
+          EVENT_SCHEDULE: ${{ github.event.schedule }}
         run: |
           SHOULD_RUN=$(python - <<'PY'
           from datetime import datetime
@@ -29,8 +31,12 @@ jobs:
           if os.environ.get("GITHUB_EVENT_NAME") == "workflow_dispatch":
               print("true")
           else:
-              now = datetime.now(ZoneInfo("Australia/Sydney"))
-              print("true" if now.hour == 7 else "false")
+              # Scheduled workflows can start late. Key off the cron expression
+              # GitHub fired, not the exact wall-clock hour when the runner starts.
+              schedule = os.environ.get("EVENT_SCHEDULE", "")
+              offset_hours = datetime.now(ZoneInfo("Australia/Sydney")).utcoffset().total_seconds() / 3600
+              valid_schedule = "0 20 * * *" if offset_hours == 11 else "0 21 * * *"
+              print("true" if schedule == valid_schedule else "false")
           PY
           )
           echo "should_run=${SHOULD_RUN}" >> "$GITHUB_OUTPUT"
@@ -55,6 +61,27 @@ jobs:
           restore-keys: |
             dedupe-db-
 
+      - name: Validate email configuration
+        if: steps.sydney_time.outputs.should_run == 'true'
+        env:
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          EMAIL_FROM: ${{ secrets.EMAIL_FROM }}
+          EMAIL_TO: ${{ secrets.EMAIL_TO }}
+        run: |
+          missing=()
+          for name in SMTP_HOST SMTP_PORT SMTP_USER SMTP_PASSWORD EMAIL_FROM EMAIL_TO; do
+            if [ -z "${!name}" ]; then
+              missing+=("$name")
+            fi
+          done
+          if [ "${#missing[@]}" -gt 0 ]; then
+            printf 'Missing required GitHub secret(s): %s\n' "${missing[*]}" >&2
+            exit 1
+          fi
+
       - name: Run daily briefing
         if: steps.sydney_time.outputs.should_run == 'true'
         env:
@@ -67,4 +94,16 @@ jobs:
           MIN_RELEVANCE_SCORE: ${{ vars.MIN_RELEVANCE_SCORE || '25' }}
           MAX_ITEM_AGE_HOURS: ${{ vars.MAX_ITEM_AGE_HOURS || '96' }}
           REQUEST_DELAY: ${{ vars.REQUEST_DELAY || '0.2' }}
+          FAIL_ON_EMAIL_ERROR: 'true'
         run: python main.py
+
+      - name: Upload run outputs
+        if: always() && steps.sydney_time.outputs.should_run == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: policy-monitor-run-${{ github.run_id }}
+          path: |
+            output/
+            logs/
+            policy_monitor.db
+          if-no-files-found: ignore
