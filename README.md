@@ -144,7 +144,39 @@ Expected output:
 
 ---
 
-## 4. macOS / Linux — cron Job
+## 4. GitHub Actions Cloud Schedule
+
+The repository includes `.github/workflows/daily_briefing.yml`, which runs on GitHub-hosted runners every morning at **7:00 AM Sydney time**. It uses two UTC cron entries so daylight saving is handled:
+
+```yaml
+- cron: '0 20 * * *' # 7:00 AM during AEDT, UTC+11
+- cron: '0 21 * * *' # 7:00 AM during AEST, UTC+10
+```
+
+Only the cron entry that matches Sydney's current UTC offset runs the briefing; the other scheduled run exits before installing dependencies. Because this runs in GitHub Actions, it still sends while your computer is asleep or turned off.
+
+In GitHub, go to **Settings -> Secrets and variables -> Actions** and add these repository secrets:
+
+```text
+SMTP_HOST
+SMTP_PORT
+SMTP_USER
+SMTP_PASSWORD
+EMAIL_FROM
+EMAIL_TO
+```
+
+Optional repository variables:
+
+```text
+MIN_RELEVANCE_SCORE
+MAX_ITEM_AGE_HOURS
+REQUEST_DELAY
+```
+
+Use the **Actions -> Daily Policy Briefing -> Run workflow** button to test a send immediately.
+
+## 5. macOS / Linux — cron Job
 
 ### Option A: cron (recommended)
 
@@ -200,7 +232,7 @@ launchctl load ~/Library/LaunchAgents/com.mandala.policymonitor.plist
 
 ---
 
-## 5. Windows — Task Scheduler
+## 6. Windows — Task Scheduler
 
 1. Edit `run_briefing.bat` — update `PROJ_DIR` to your actual path.
 
@@ -225,7 +257,7 @@ launchctl load ~/Library/LaunchAgents/com.mandala.policymonitor.plist
 
 ---
 
-## 6. In-Process Scheduler (alternative to cron)
+## 7. In-Process Scheduler (alternative to cron)
 
 If you prefer not to use cron / Task Scheduler:
 
@@ -244,7 +276,7 @@ Run this in a persistent terminal (tmux, screen, or a systemd service).
 
 ---
 
-## 7. Output Files
+## 8. Output Files
 
 | File | Description |
 |------|-------------|
@@ -256,7 +288,7 @@ Run this in a persistent terminal (tmux, screen, or a systemd service).
 
 ---
 
-## 8. Email Structure
+## 9. Email Structure
 
 **Subject:** `Daily Industrial Policy Briefing — 08 March 2026`
 
@@ -280,7 +312,7 @@ Attachment: full_briefing_2026-03-08.md
 
 ---
 
-## 9. Customisation
+## 10. Customisation
 
 ### Add or remove sources
 Edit [policy_monitor/collectors/sources.py](policy_monitor/collectors/sources.py).
@@ -315,7 +347,7 @@ TLDR_BULLETS=6
 
 ---
 
-## 10. Troubleshooting
+## 11. Troubleshooting
 
 | Problem | Fix |
 |---------|-----|

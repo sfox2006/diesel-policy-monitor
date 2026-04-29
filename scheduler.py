@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """
-PolicyMonitor daily scheduler — fires at 06:00 AEST (Sydney time) every day.
+PolicyMonitor daily scheduler — fires at 07:00 AEST/AEDT (Sydney time) every day.
 
 Handles daylight saving automatically: Sydney is UTC+11 (AEDT) Oct–Apr,
 UTC+10 (AEST) Apr–Oct. The scheduler recomputes the UTC target each day.
 
 Usage:
-    python scheduler.py          # 06:00 Sydney time daily
+    python scheduler.py          # 07:00 Sydney time daily
     python scheduler.py --now    # run immediately, then keep on schedule
 """
 
@@ -25,12 +25,12 @@ setup_logging()
 logger = logging.getLogger(__name__)
 
 SYDNEY = ZoneInfo("Australia/Sydney")
-FIRE_HOUR = 6    # 06:00 AEST/AEDT
+FIRE_HOUR = 7    # 07:00 AEST/AEDT
 FIRE_MINUTE = 0
 
 
 def _next_fire() -> datetime:
-    """Return the next 06:00 Sydney time as a UTC-aware datetime."""
+    """Return the next 07:00 Sydney time as a UTC-aware datetime."""
     now_sydney = datetime.now(SYDNEY)
     target = now_sydney.replace(hour=FIRE_HOUR, minute=FIRE_MINUTE, second=0, microsecond=0)
     if now_sydney >= target:
@@ -75,7 +75,7 @@ def main() -> None:
     args = parser.parse_args()
 
     logger.info(
-        "Scheduler started — daily at 06:00 Sydney time (currently %s)",
+        "Scheduler started — daily at 07:00 Sydney time (currently %s)",
         datetime.now(SYDNEY).strftime("%H:%M %Z"),
     )
 
