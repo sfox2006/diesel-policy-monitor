@@ -13,7 +13,7 @@ Each entry is a dict with:
 Topics (five briefing sections):
   reserves_and_prices    – domestic stock levels, wholesale/retail prices, AIP data
   shipments              – tanker movements, port activity, import volumes
-  partner_country        – developments in Japan/Malaysia/Singapore/Korea/Thailand
+  partner_country        – developments in Japan/Malaysia/Singapore/Korea/Taiwan/Thailand
                            affecting what Australia can import
   policy_and_legislation – bills, ministerial statements, IEA obligations,
                            DCCEEW/PM releases
@@ -21,7 +21,7 @@ Topics (five briefing sections):
                            risk flags; weighted higher for urgency alerting
 
 Regions used:
-  Australia, Japan, Malaysia, Singapore, SouthKorea, Thailand, International
+  Australia, Japan, Malaysia, Singapore, SouthKorea, Taiwan, Thailand, International
 
 Removed from previous version:
   - Australian Energy Regulator (feed dead)
@@ -271,6 +271,20 @@ SOURCES: list[Source] = [
         "feed": "https://www.mofa.go.jp/rss/rss.xml",
         "topics": ["partner_country", "supply_disruption"],
     },
+    {
+        "name": "Japan Prime Minister's Office - Latest Information",
+        "region": "Japan",
+        "type": "primary",
+        "feed": "https://japan.kantei.go.jp/index-e2.rdf",
+        "topics": ["partner_country", "policy_and_legislation", "supply_disruption"],
+    },
+    {
+        "name": "Japan Ministry of Finance - News Release",
+        "region": "Japan",
+        "type": "primary",
+        "feed": "https://www.mof.go.jp/english/news.rss",
+        "topics": ["partner_country", "policy_and_legislation"],
+    },
 
     # ══════════════════════════════════════════════════════════════════════════
     # PRIMARY — Malaysia
@@ -283,6 +297,14 @@ SOURCES: list[Source] = [
         "scrape_url": "https://www.petronas.com/media/media-releases",
         "scrape_cfg": {"list_selector": "div.media-release-item", "title": "h3", "link": "a"},
         "topics": ["partner_country", "shipments", "supply_disruption"],
+    },
+    {
+        "name": "Malaysia Ministry of Finance - Press Releases",
+        "region": "Malaysia",
+        "type": "primary",
+        "scrape_url": "https://www.mof.gov.my/portal/en/news/press-release",
+        "scrape_cfg": {"list_selector": "li.list-group-item", "title": ".item-info a", "link": ".item-info a"},
+        "topics": ["policy_and_legislation", "reserves_and_prices"],
     },
 
     # ══════════════════════════════════════════════════════════════════════════
@@ -303,6 +325,20 @@ SOURCES: list[Source] = [
         "feed": "https://www.mfa.gov.sg/Newsroom/rss",
         "topics": ["partner_country", "supply_disruption"],
     },
+    {
+        "name": "Singapore Business Times - Top Stories",
+        "region": "Singapore",
+        "type": "secondary",
+        "feed": "https://www.businesstimes.com.sg/rss/top-stories",
+        "topics": [],
+    },
+    {
+        "name": "Singapore Business Times - Companies and Markets",
+        "region": "Singapore",
+        "type": "secondary",
+        "feed": "https://www.businesstimes.com.sg/rss/companies-markets",
+        "topics": [],
+    },
 
     # ══════════════════════════════════════════════════════════════════════════
     # PRIMARY — South Korea
@@ -314,6 +350,47 @@ SOURCES: list[Source] = [
         "type": "primary",
         "feed": "https://www.mofa.go.kr/eng/rss/engRss.do",
         "topics": ["partner_country", "supply_disruption"],
+    },
+    {
+        "name": "Yonhap News Agency - All News",
+        "region": "SouthKorea",
+        "type": "secondary",
+        "feed": "https://en.yna.co.kr/RSS/news.xml",
+        "topics": [],
+    },
+    {
+        "name": "KBS World - News",
+        "region": "SouthKorea",
+        "type": "secondary",
+        "feed": "https://world.kbs.co.kr/rss/rss_news.htm?lang=e",
+        "topics": [],
+    },
+
+    # PRIMARY - Taiwan
+
+    {
+        "name": "Taiwan Ministry of Economic Affairs - What's New",
+        "region": "Taiwan",
+        "type": "primary",
+        "scrape_url": "https://www.moea.gov.tw/MNS/english/news/News.aspx?kind=6&menu_id=176",
+        "scrape_cfg": {"list_selector": "tr", "title": "a[href*='news_id']", "link": "a[href*='news_id']"},
+        "topics": ["partner_country", "policy_and_legislation"],
+    },
+    {
+        "name": "Taiwan Energy Administration - What's New",
+        "region": "Taiwan",
+        "type": "primary",
+        "scrape_url": "https://www.moeaea.gov.tw/ECW/english/news/News.aspx?kind=6&menu_id=958",
+        "scrape_cfg": {"list_selector": "tr", "title": "a[href*='news_id']", "link": "a[href*='news_id']"},
+        "topics": ["reserves_and_prices", "policy_and_legislation", "supply_disruption"],
+    },
+    {
+        "name": "CPC Corporation Taiwan - News and Events",
+        "region": "Taiwan",
+        "type": "primary",
+        "scrape_url": "https://www.cpc.com.tw/en/News.aspx?n=2705&sms=8994",
+        "scrape_cfg": {"list_selector": "tr", "title": "a[href*='News_Content']", "link": "a[href*='News_Content']"},
+        "topics": ["reserves_and_prices", "shipments", "supply_disruption"],
     },
 
     # ══════════════════════════════════════════════════════════════════════════
@@ -433,7 +510,21 @@ SOURCES: list[Source] = [
         "name": "Malay Mail – News",
         "region": "Malaysia",
         "type": "secondary",
-        "feed": "https://www.malaymail.com/feed",
+        "feed": "https://www.malaymail.com/feed/rss/malaysia",
+        "topics": [],
+    },
+    {
+        "name": "Malay Mail - Money",
+        "region": "Malaysia",
+        "type": "secondary",
+        "feed": "https://www.malaymail.com/feed/rss/money",
+        "topics": [],
+    },
+    {
+        "name": "Free Malaysia Today - Business",
+        "region": "Malaysia",
+        "type": "secondary",
+        "feed": "https://www.freemalaysiatoday.com/category/business/feed/",
         "topics": [],
     },
     {
@@ -462,6 +553,21 @@ SOURCES: list[Source] = [
         "region": "SouthKorea",
         "type": "secondary",
         "feed": "https://koreajoongangdaily.joins.com/rss/feeds",
+        "topics": [],
+    },
+    {
+        "name": "Focus Taiwan - Business",
+        "region": "Taiwan",
+        "type": "secondary",
+        "scrape_url": "https://focustaiwan.tw/business",
+        "scrape_cfg": {"list_selector": "a[href^='/business/']", "title": "a", "link": "a"},
+        "topics": [],
+    },
+    {
+        "name": "Taipei Times - News",
+        "region": "Taiwan",
+        "type": "secondary",
+        "feed": "https://www.taipeitimes.com/xml/index.rss",
         "topics": [],
     },
     {

@@ -35,6 +35,15 @@ class ScorerTests(unittest.TestCase):
 
         self.assertEqual(score_item(story), 0.0)
 
+    def test_scores_taiwan_refined_fuel_supply_story(self) -> None:
+        story = item(
+            "Taiwan confirms diesel and petroleum reserve coverage after shipping disruption",
+            "MOEA said CPC Corporation is monitoring fuel imports and refinery supply.",
+            source_type="primary",
+        )
+
+        self.assertGreaterEqual(score_item(story), 25.0)
+
     def test_rank_items_filters_zero_score_noise(self) -> None:
         relevant = item("Diesel reserve release planned after fuel stockholding review")
         noise = item("Small modular reactors under development in the United States")

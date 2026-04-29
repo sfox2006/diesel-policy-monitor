@@ -100,9 +100,12 @@ def _extract_title_href(
     """Extract (title_text, absolute_href) from a BeautifulSoup tag."""
     # Title
     title_tag = row.select_one(title_sel)
-    if title_tag is None:
+    if title_tag is not None:
+        title = title_tag.get_text(strip=True)
+    elif row.name == "a":
+        title = row.get_text(strip=True)
+    else:
         return "", ""
-    title = title_tag.get_text(strip=True)
 
     # Link
     link_tag = row.select_one(link_sel)

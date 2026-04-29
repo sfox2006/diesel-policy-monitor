@@ -4,11 +4,11 @@ Scoring and ranking engine — Australian Diesel Fuel Security edition.
 Four target areas:
   (a) Australian diesel situation — availability, price, trades/contracts
   (b) Supply chain changes for Australia's diesel trading partners
-      (Japan, Malaysia, Singapore, South Korea, Thailand)
+      (Japan, Malaysia, Singapore, South Korea, Taiwan, Thailand)
   (c) Public announcements by politicians or industry leaders from
-      those five countries or Australia regarding diesel and supply chains
+      those countries or Australia regarding diesel and supply chains
   (d) Policy developments regarding diesel and related supply chains
-      from Japan, Malaysia, Singapore, South Korea, Thailand
+      from Japan, Malaysia, Singapore, South Korea, Taiwan, Thailand
 
 Scoring dimensions
 ──────────────────
@@ -110,6 +110,16 @@ PRIORITY_PATTERNS: list[tuple[str, float]] = [
     (r"\bkorea.{0,30}(refiner|refinery|refining)", 13.0),
     (r"\bknoc\b|korea national oil", 13.0),
 
+    # Taiwan
+    (r"\btaiwan.{0,50}(diesel|fuel|oil|reserve|refin|supply chain|export|import)", 14.0),
+    (r"\btaiwan.{0,30}(strategic reserve release|petroleum reserve|oil reserve)", 15.0),
+    (r"\btaiwan.{0,30}(diesel subsid|fuel subsid|price control|price freeze)", 14.0),
+    (r"\btaiwan.{0,30}(export ban|export cap|export restrict)", 14.0),
+    (r"\btaiwan.{0,30}(refiner|refinery|refining)", 13.0),
+    (r"\bcpc corporation\b.{0,40}(fuel|oil|diesel|petroleum|supply|price)", 14.0),
+    (r"\bmoea\b.{0,30}(fuel|oil|diesel|petroleum|energy|reserve)", 13.0),
+    (r"\benergy administration\b.{0,30}(taiwan|fuel|oil|diesel|petroleum)", 13.0),
+
     # Thailand
     (r"\bthailand.{0,50}(diesel|fuel|oil|reserve|refin|supply chain|export|import)", 14.0),
     (r"\bptt\b|ptt plc", 13.0),
@@ -174,6 +184,11 @@ PRIORITY_PATTERNS: list[tuple[str, float]] = [
     (r"\byoon.{0,10}(fuel|energy|oil|diesel|reserve|supply)", 13.0),
     (r"\bkorean (prime minister|pm|minister|government|official).{0,50}(fuel|energy|oil|diesel|supply)", 14.0),
     (r"\bknoc (ceo|chief|executive|president|official)\b", 13.0),
+
+    # Taiwan
+    (r"\btaiwan(?:ese)? (president|premier|minister|government|official).{0,50}(fuel|energy|oil|diesel|petroleum|supply)", 14.0),
+    (r"\bcpc corporation (ceo|chair|chief|executive|president|official)\b", 13.0),
+    (r"\bmoea (minister|official|said|announced|released|confirmed|warned).{0,40}(fuel|energy|oil|diesel|petroleum|supply)", 13.0),
 
     # Thailand
     (r"\bpaetongtarn\b.{0,50}(fuel|energy|oil|diesel|ptt|supply)", 13.0),
@@ -269,7 +284,7 @@ CORE_DIESEL_PATTERNS: list[str] = [
 
 CONTEXTUAL_RELEVANCE_PATTERNS: list[str] = [
     r"\baustralia\w*.{0,50}(fuel|diesel|petroleum|refin|import|stockholding|reserve|terminal gate)",
-    r"\b(japan|malaysia|singapore|south korea|korea|thailand).{0,50}(diesel|gasoil|fuel|petroleum|refin|export|import|reserve)",
+    r"\b(japan|malaysia|singapore|south korea|korea|taiwan|thailand).{0,50}(diesel|gasoil|fuel|petroleum|refin|export|import|reserve)",
     r"\b(refiner|refinery|refining|tanker|bunkering|port).{0,40}(diesel|fuel|oil|petroleum|gasoil)",
     r"\b(strait of hormuz|hormuz|strait of malacca|malacca strait|south china sea).{0,60}(diesel|fuel|oil|petroleum|tanker|shipping)",
     r"\b(oil|fuel|diesel|petroleum).{0,50}(export ban|export cap|export restrict|reserve release|supply disruption|shortage)",
@@ -283,7 +298,7 @@ STRATEGIC_OIL_PATTERNS: list[str] = [
     r"\bfuel cost\w*\b",
     r"\bfuel supply\b",
     r"\b(strait of hormuz|hormuz|strait of malacca|malacca strait).{0,80}(crisis|closure|reopen|blockade|shipping|route|supply|oil)",
-    r"\b(japan|malaysia|singapore|south korea|korea|thailand).{0,70}(crude oil|oil refiner|oil refinery|oil supply|oil import|oil export)",
+    r"\b(japan|malaysia|singapore|south korea|korea|taiwan|thailand).{0,70}(crude oil|oil refiner|oil refinery|oil supply|oil import|oil export)",
     r"\b(bitumen|construction|logistics|trucking|freight).{0,80}(fuel|oil|diesel|hormuz|supply)",
 ]
 
@@ -354,6 +369,9 @@ FOREIGN_LEADERS: list[str] = [
     r"\byoon.{0,10}(fuel|energy|oil|diesel|reserve|supply)",
     r"\bkorean (prime minister|pm|minister|official).{0,50}(fuel|energy|oil|diesel|supply)",
     r"\bknoc (ceo|chief|executive|president)\b",
+    r"\btaiwan(?:ese)? (president|premier|minister|official).{0,50}(fuel|energy|oil|diesel|petroleum|supply)",
+    r"\bcpc corporation (ceo|chair|chief|executive|president)\b",
+    r"\bmoea (minister|official|said|announced|released|confirmed|warned).{0,40}(fuel|energy|oil|diesel|petroleum|supply)",
     r"\bpaetongtarn\b.{0,50}(fuel|energy|oil|diesel|ptt|supply)",
     r"\bthai (prime minister|pm|minister|official).{0,50}(fuel|energy|oil|diesel|supply)",
     r"\bptt (ceo|chief|executive|president)\b",
