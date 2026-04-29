@@ -37,10 +37,10 @@ logger = logging.getLogger(__name__)
 # General media sources have topics=[] and rely purely on keyword matching.
 TOPIC_BONUS: dict[str, float] = {
     "reserves_and_prices":    15.0,
-    "shipments":              15.0,
-    "partner_country":        12.0,
+    "shipments":              10.0,
+    "partner_country":         0.0,
     "supply_disruption":      12.0,
-    "policy_and_legislation": 10.0,
+    "policy_and_legislation": 12.0,
 }
 
 # ── Priority keyword patterns ──────────────────────────────────────────────────
@@ -92,14 +92,12 @@ PRIORITY_PATTERNS: list[tuple[str, float]] = [
     (r"\bmalaysia.{0,30}(diesel subsid|fuel subsid|price control)", 14.0),
     (r"\bmalaysia.{0,30}(export ban|export cap|export restrict)", 14.0),
     (r"\bmalaysia.{0,30}(refiner|refinery|refining)", 13.0),
-    (r"\bmalaysia.{0,30}supply chain", 13.0),
 
     # Singapore
     (r"\bsingapore.{0,50}(diesel|fuel|oil|reserve|refin|supply chain|export|import)", 14.0),
     (r"\bsingapore.{0,30}australia.{0,30}(fuel|oil|supply|agreement|deal|contract)", 15.0),
     (r"\bema singapore|energy market authority", 13.0),
     (r"\bsingapore.{0,30}(bunker|refin|trading hub|oil hub)", 13.0),
-    (r"\bsingapore.{0,30}supply chain", 13.0),
 
     # South Korea
     (r"\b(south )?korea.{0,50}(diesel|fuel|oil|reserve|refin|supply chain|export|import)", 14.0),
@@ -127,7 +125,6 @@ PRIORITY_PATTERNS: list[tuple[str, float]] = [
     (r"\bthailand.{0,30}(export ban|ban on export|export restrict)", 14.0),
     (r"\bthailand.{0,30}oil trader\w*", 13.0),
     (r"\bthailand.{0,30}(refiner|refinery|refining)", 13.0),
-    (r"\bthailand.{0,30}supply chain", 13.0),
 
     # ── Geopolitical / shipping route signals ─────────────────────────────────
     (r"\bstrait of hormuz|hormuz", 13.0),
@@ -136,7 +133,7 @@ PRIORITY_PATTERNS: list[tuple[str, float]] = [
     (r"\bchoke point\w*", 11.0),
     (r"\bshipping disruption\w*", 12.0),
     (r"\bsupply disruption\w*", 12.0),
-    (r"\bsupply chain (disruption|risk|securit)", 11.0),
+    (r"\bfuel supply (disruption|risk|securit)", 12.0),
     (r"\bport (congestion|disruption|closure)", 11.0),
     (r"\btanker\w*", 9.0),
     (r"\bbunkering\b", 9.0),
@@ -147,15 +144,15 @@ PRIORITY_PATTERNS: list[tuple[str, float]] = [
     (r"\biea collective action", 14.0),
 
     # ── (c) & (d) Public statements and policy — Australian leaders ────────────
-    (r"\bchris bowen\b", 14.0),
-    (r"\bmadeleine king\b", 14.0),
-    (r"\bdon farrell\b", 12.0),
-    (r"\bjim chalmers\b", 11.0),
+    (r"\bchris bowen\b.{0,50}(fuel|diesel|oil|petroleum|reserve|supply)", 14.0),
+    (r"\bmadeleine king\b.{0,50}(fuel|diesel|oil|petroleum|reserve|supply)", 14.0),
+    (r"\bdon farrell\b.{0,50}(fuel|diesel|oil|petroleum|reserve|supply)", 12.0),
+    (r"\bjim chalmers\b.{0,50}(fuel|diesel|oil|petroleum|reserve|supply)", 11.0),
     (r"\banthony albanese.{0,50}(fuel|energy|singapore|oil|supply|diesel)", 15.0),
     (r"\balbanese.{0,30}singapore", 14.0),
     (r"\bpm.{0,20}(fuel|energy|diesel|supply|singapore)", 12.0),
-    (r"\bminister (for|of) (energy|resources|fuel|climate|trade)", 12.0),
-    (r"\bdccew\b", 12.0),
+    (r"\bminister (for|of) (energy|resources|fuel|climate|trade|finance|transport).{0,50}(fuel|diesel|oil|petroleum|reserve|supply)", 12.0),
+    (r"\bdccew\b.{0,30}(fuel|diesel|oil|petroleum|reserve|supply)", 12.0),
     (r"\baemo\b.{0,30}(fuel|diesel|oil|reserve|supply)", 11.0),
     (r"\baccc.{0,20}(fuel|diesel|price|petrol)", 11.0),
     (r"\baustralia.{0,40}(fuel polic|fuel strateg|fuel plan|fuel secur)", 13.0),
@@ -174,7 +171,6 @@ PRIORITY_PATTERNS: list[tuple[str, float]] = [
     # Malaysia
     (r"\banwar ibrahim\b.{0,50}(fuel|energy|oil|diesel|petronas|supply)", 14.0),
     (r"\bmalaysian (prime minister|pm|minister|government|official).{0,50}(fuel|energy|oil|diesel|supply)", 14.0),
-    (r"\bpetronas (ceo|chief|executive|president|official)\b", 13.0),
 
     # Singapore
     (r"\blawrence wong\b.{0,50}(fuel|energy|oil|diesel|supply|australia)", 14.0),
@@ -183,17 +179,14 @@ PRIORITY_PATTERNS: list[tuple[str, float]] = [
     # South Korea
     (r"\byoon.{0,10}(fuel|energy|oil|diesel|reserve|supply)", 13.0),
     (r"\bkorean (prime minister|pm|minister|government|official).{0,50}(fuel|energy|oil|diesel|supply)", 14.0),
-    (r"\bknoc (ceo|chief|executive|president|official)\b", 13.0),
 
     # Taiwan
     (r"\btaiwan(?:ese)? (president|premier|minister|government|official).{0,50}(fuel|energy|oil|diesel|petroleum|supply)", 14.0),
-    (r"\bcpc corporation (ceo|chair|chief|executive|president|official)\b", 13.0),
     (r"\bmoea (minister|official|said|announced|released|confirmed|warned).{0,40}(fuel|energy|oil|diesel|petroleum|supply)", 13.0),
 
     # Thailand
     (r"\bpaetongtarn\b.{0,50}(fuel|energy|oil|diesel|ptt|supply)", 13.0),
     (r"\bthai (prime minister|pm|minister|government|official).{0,50}(fuel|energy|oil|diesel|supply)", 14.0),
-    (r"\bptt (ceo|chief|executive|president|official)\b", 13.0),
 
     # ── Watchlist / forward-looking ───────────────────────────────────────────
     (r"\bupcoming (review|report|statement|decision|announcement)", 5.0),
@@ -212,6 +205,7 @@ NEGATIVE_PATTERNS: list[tuple[str, float]] = [
     (r"\belectric (vehicle|truck|car|bus)\b", -10.0),
     (r"\bev charging\b", -10.0),
     (r"\bgreen (hydrogen|ammonia|energy)\b", -10.0),
+    (r"\bused cooking oil\b|\bbiofuel boom\b|\brenewable diesel\b", -100.0),
     (r"\bsolar (panel|farm|power)\b", -8.0),
     (r"\bwind (farm|turbine|power)\b", -8.0),
     (r"\brenewable energy.{0,20}(replace|eliminat|substitut)", -8.0),
@@ -282,6 +276,21 @@ CORE_DIESEL_PATTERNS: list[str] = [
     r"\bterminal gate price\w*\b",
 ]
 
+STRONG_MEDIA_FUEL_PATTERNS: list[str] = [
+    r"\bdiesel\b",
+    r"\bgasoil\b",
+    r"\bdistillate\w*\b",
+    r"\bmiddle distillate\w*\b",
+    r"\bfuel securit\w*\b",
+    r"\bfuel reserve\w*\b",
+    r"\bfuel stockholding\w*\b",
+    r"\bminimum stockholding obligation|mso\b",
+    r"\bterminal gate price\w*\b",
+    r"\bretail price\w*.{0,30}(fuel|petrol|diesel)\b",
+    r"\b(fuel|diesel|petrol).{0,30}(shortage|disruption|outage|rationing)\b",
+    r"\b(strait of hormuz|hormuz|strait of malacca|malacca strait).{0,80}(fuel|oil|diesel|tanker|shipping)\b",
+]
+
 CONTEXTUAL_RELEVANCE_PATTERNS: list[str] = [
     r"\baustralia\w*.{0,50}(fuel|diesel|petroleum|refin|import|stockholding|reserve|terminal gate)",
     r"\b(japan|malaysia|singapore|south korea|korea|taiwan|thailand).{0,50}(diesel|gasoil|fuel|petroleum|refin|export|import|reserve)",
@@ -334,14 +343,14 @@ WATCHLIST_PATTERNS: list[str] = [
 
 # ── Statement patterns — named leaders ────────────────────────────────────────
 AU_POLITICAL_LEADERS: list[str] = [
-    r"\banthony albanese\b",
-    r"\bchris bowen\b",
-    r"\bmadeleine king\b",
-    r"\bdon farrell\b",
-    r"\bjim chalmers\b",
-    r"\bpenny wong\b",
-    r"\bminister (for|of) (energy|resources|fuel|climate|trade)",
-    r"\bpm albanese\b",
+    r"\banthony albanese\b.{0,50}(fuel|energy|oil|diesel|petroleum|reserve|supply)",
+    r"\bchris bowen\b.{0,50}(fuel|energy|oil|diesel|petroleum|reserve|supply)",
+    r"\bmadeleine king\b.{0,50}(fuel|energy|oil|diesel|petroleum|reserve|supply)",
+    r"\bdon farrell\b.{0,50}(fuel|energy|oil|diesel|petroleum|reserve|supply)",
+    r"\bjim chalmers\b.{0,50}(fuel|energy|oil|diesel|petroleum|reserve|supply)",
+    r"\bpenny wong\b.{0,50}(fuel|energy|oil|diesel|petroleum|reserve|supply)",
+    r"\bminister (for|of) (energy|resources|fuel|climate|trade|finance|transport).{0,50}(fuel|oil|diesel|petroleum|reserve|supply)",
+    r"\bpm albanese\b.{0,50}(fuel|energy|oil|diesel|petroleum|reserve|supply)",
 ]
 
 AU_PUBLIC_SERVICE: list[str] = [
@@ -351,30 +360,21 @@ AU_PUBLIC_SERVICE: list[str] = [
     r"\babs\b.{0,30}(data|statistics|report|release).{0,20}(fuel|energy|oil|diesel)",
 ]
 
-AU_INDUSTRY_LEADERS: list[str] = [
-    r"\bappea\b.{0,30}(said|warned|called|released|chief|ceo)",
-    r"\baustralian institute of petroleum\b.{0,30}(said|warned|data|report)",
-    r"\bminerals council\b.{0,30}(said|warned|called|ceo|chief)",
-    r"\bnational farmers federation\b.{0,30}(said|warned|called).{0,30}(fuel|diesel|oil)",
-]
+AU_INDUSTRY_LEADERS: list[str] = []
 
 FOREIGN_LEADERS: list[str] = [
     r"\bjapanese (prime minister|pm|minister|official).{0,50}(fuel|energy|oil|diesel|reserve|supply)",
     r"\bishiba\b.{0,40}(fuel|energy|oil|diesel)",
     r"\banwar ibrahim\b.{0,50}(fuel|energy|oil|diesel|petronas|supply)",
     r"\bmalaysian (prime minister|pm|minister|official).{0,50}(fuel|energy|oil|diesel|supply)",
-    r"\bpetronas (ceo|chief|executive|president)\b",
     r"\blawrence wong\b.{0,50}(fuel|energy|oil|diesel|supply|australia)",
     r"\bsingapore (prime minister|pm|minister|official).{0,50}(fuel|energy|oil|diesel|supply)",
     r"\byoon.{0,10}(fuel|energy|oil|diesel|reserve|supply)",
     r"\bkorean (prime minister|pm|minister|official).{0,50}(fuel|energy|oil|diesel|supply)",
-    r"\bknoc (ceo|chief|executive|president)\b",
     r"\btaiwan(?:ese)? (president|premier|minister|official).{0,50}(fuel|energy|oil|diesel|petroleum|supply)",
-    r"\bcpc corporation (ceo|chair|chief|executive|president)\b",
     r"\bmoea (minister|official|said|announced|released|confirmed|warned).{0,40}(fuel|energy|oil|diesel|petroleum|supply)",
     r"\bpaetongtarn\b.{0,50}(fuel|energy|oil|diesel|ptt|supply)",
     r"\bthai (prime minister|pm|minister|official).{0,50}(fuel|energy|oil|diesel|supply)",
-    r"\bptt (ceo|chief|executive|president)\b",
 ]
 
 STATEMENT_PATTERNS: list[str] = (
@@ -395,11 +395,27 @@ _COMPILED_NEGATIVE = _compile_weighted(NEGATIVE_PATTERNS)
 _COMPILED_DIRECT_FUEL = _compile(DIRECT_FUEL_PATTERNS)
 _COMPILED_HARD_FUEL = _compile(HARD_FUEL_PATTERNS)
 _COMPILED_CORE_DIESEL = _compile(CORE_DIESEL_PATTERNS)
+_COMPILED_STRONG_MEDIA_FUEL = _compile(STRONG_MEDIA_FUEL_PATTERNS)
 _COMPILED_CONTEXTUAL_RELEVANCE = _compile(CONTEXTUAL_RELEVANCE_PATTERNS)
 _COMPILED_STRATEGIC_OIL = _compile(STRATEGIC_OIL_PATTERNS)
 _COMPILED_LOW_SIGNAL = _compile(LOW_SIGNAL_WITHOUT_FUEL_PATTERNS)
 _COMPILED_WATCHLIST = _compile(WATCHLIST_PATTERNS)
 _COMPILED_STATEMENT = _compile(STATEMENT_PATTERNS)
+
+POLICY_OR_OFFICIAL_CONTEXT_PATTERNS: list[str] = [
+    r"\bgovernment\b|\bministry\b|\bminister\b|\bsecretary\b|\btreasury\b|\bparliament\b|\bsenate\b",
+    r"\bprime minister\b|\bpresident\b|\bpremier\b|\bpm\b",
+    r"\bpolicy\b|\blegislation\b|\bregulat\w*\b|\blaw\b|\bbill\b|\bmandate\b",
+    r"\bannounc\w*\b|\bsaid\b|\bconfirmed\b|\bwarned\b|\breleased\b|\bstatement\b",
+    r"\b(diesel|gas|petrol|fuel).{0,20}(up|down|rise|fall|increase|decrease|higher|lower)\b",
+    r"\b(up|down|higher|lower).{0,20}(diesel|gas|petrol|fuel)\b",
+    r"\bsubsid\w*\b|\bprice cap\b|\bprice control\b|\bretail price\w*\b|\bfuel tax\w*\b",
+    r"\breserve\w*\b|\bstockhold\w*\b|\bemergency\b|\bshortage\b|\bdisruption\b",
+    r"\bexport (ban|cap|restrict)\b|\bimport restriction\b|\breserve release\b",
+    r"\bstrait of hormuz\b|\bhormuz\b|\bstrait of malacca\b|\bmalacca strait\b",
+]
+
+_COMPILED_POLICY_OR_OFFICIAL = _compile(POLICY_OR_OFFICIAL_CONTEXT_PATTERNS)
 
 
 def _direct_fuel_hits(text: str) -> int:
@@ -414,12 +430,20 @@ def _core_diesel_hits(text: str) -> int:
     return sum(1 for pattern in _COMPILED_CORE_DIESEL if pattern.search(text))
 
 
+def _strong_media_fuel_hits(text: str) -> int:
+    return sum(1 for pattern in _COMPILED_STRONG_MEDIA_FUEL if pattern.search(text))
+
+
 def _contextual_hits(text: str) -> int:
     return sum(1 for pattern in _COMPILED_CONTEXTUAL_RELEVANCE if pattern.search(text))
 
 
 def _strategic_oil_hits(text: str) -> int:
     return sum(1 for pattern in _COMPILED_STRATEGIC_OIL if pattern.search(text))
+
+
+def _policy_or_official_hits(text: str) -> int:
+    return sum(1 for pattern in _COMPILED_POLICY_OR_OFFICIAL if pattern.search(text))
 
 
 def _passes_relevance_gate(item: PolicyItem, text: str) -> bool:
@@ -433,8 +457,10 @@ def _passes_relevance_gate(item: PolicyItem, text: str) -> bool:
     direct_hits = _direct_fuel_hits(text)
     hard_hits = _hard_fuel_hits(text)
     core_hits = _core_diesel_hits(text)
+    strong_media_fuel_hits = _strong_media_fuel_hits(text)
     contextual_hits = _contextual_hits(text)
     strategic_hits = _strategic_oil_hits(text)
+    policy_or_official_hits = _policy_or_official_hits(text)
 
     if any(pattern.search(text) for pattern in _COMPILED_LOW_SIGNAL):
         # A gas/LNG/electricity article with incidental "liquid fuels",
@@ -443,15 +469,22 @@ def _passes_relevance_gate(item: PolicyItem, text: str) -> bool:
         return core_hits > 0
 
     if direct_hits:
-        return True
+        return (
+            item.source_type == "primary"
+            or policy_or_official_hits > 0
+            or strong_media_fuel_hits > 0
+        )
 
     if strategic_hits:
-        return True
+        return item.source_type == "primary" or policy_or_official_hits > 0
 
-    # Let primary/official sources through on one strong contextual signal, but
-    # make secondary media/trade feeds prove a little more.
-    required_contextual_hits = 1 if item.source_type == "primary" else 2
-    return contextual_hits >= required_contextual_hits
+    if item.source_type == "primary":
+        return contextual_hits >= 1
+
+    # Media/trade feeds should surface fuel policy, official announcements,
+    # prices, reserves, emergency actions, or route disruptions - not ordinary
+    # oil-company market moves.
+    return contextual_hits >= 2 and policy_or_official_hits > 0
 
 
 def score_item(item: PolicyItem) -> float:
