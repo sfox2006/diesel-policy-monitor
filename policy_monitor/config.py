@@ -61,12 +61,17 @@ MIN_RELEVANCE_SCORE: float = _get_float("MIN_RELEVANCE_SCORE", 25.0)
 # Set to 0 to disable the filter entirely.
 MAX_ITEM_AGE_HOURS: int = _get_int("MAX_ITEM_AGE_HOURS", 24)
 
+# Source profile:
+# - fuel_policy: default focused crawl for diesel/fuel and official policy briefings.
+# - all: legacy full catalogue, including broad industry and union sources.
+SOURCE_PROFILE: str = _get("SOURCE_PROFILE", "fuel_policy").lower()
+
 # Day of week for the weekly outlook email (0=Monday … 6=Sunday). Default: 6 (Sunday).
 WEEKLY_DAY_OF_WEEK: int = _get_int("WEEKLY_DAY_OF_WEEK", 6)
 
 # ── HTTP ──────────────────────────────────────────────────────────────────────
-REQUEST_TIMEOUT: int = _get_int("REQUEST_TIMEOUT", 15)
-REQUEST_DELAY: float = _get_float("REQUEST_DELAY", 1.5)
+REQUEST_TIMEOUT: int = _get_int("REQUEST_TIMEOUT", 8)
+REQUEST_DELAY: float = _get_float("REQUEST_DELAY", 0.2)
 USER_AGENT: str = _get(
     "USER_AGENT", "PolicyMonitor/1.0 (research@mandalapartners.com)"
 )

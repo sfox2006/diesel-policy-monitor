@@ -10,12 +10,29 @@ import time
 from datetime import datetime, timezone
 
 import feedparser
+import requests
 
 from policy_monitor import config
 from policy_monitor.collectors.models import PolicyItem
 from policy_monitor.collectors.sources import Source
 
 logger = logging.getLogger(__name__)
+
+_SESSION: requests.Session | None = None
+
+
+def _session() -> requests.Session:
+    global _SESSION
+    if _SESSION is None:
+        _SESSION = requests.Session()
+        _SESSION.headers.update(
+            {
+                "User-Agent": config.USER_AGENT,
+                "Accept": "application/rss+xml, application/atom+xml, */*",
+                "Accept-Language": "en-US,en;q=0.9",
+            }
+        )
+    return _SESSION
 
 
 def _parse_date(entry: feedparser.util.FeedParserDict) -> datetime | None:
@@ -39,13 +56,14 @@ def collect_rss(source: Source) -> list[PolicyItem]:
     logger.info("RSS  ← %s  (%s)", source["name"], feed_url)
 
     try:
-        feed = feedparser.parse(
-            feed_url,
-            agent=config.USER_AGENT,
-            request_headers={"Accept": "application/rss+xml, application/atom+xml, */*"},
-        )
-    except Exception as exc:
+        resp = _session().get(feed_url, timeout=(10, config.REQUEST_TIMEOUT))
+        resp.raise_for_status()
+        feed = feedparser.parse(resp.content)
+    except requests.RequestException as exc:
         logger.error("RSS fetch failed for %s: %s", source["name"], exc)
+        return []
+    except Exception as exc:
+        logger.error("RSS parse failed for %s: %s", source["name"], exc)
         return []
 
     if feed.bozo and not feed.entries:
