@@ -76,17 +76,24 @@ USER_AGENT: str = _get(
     "USER_AGENT", "PolicyMonitor/1.0 (research@mandalapartners.com)"
 )
 
-# X API / social monitoring. Uses X API v2 Recent Search when X_BEARER_TOKEN is set.
-X_BEARER_TOKEN: str = _get("X_BEARER_TOKEN")
+# X / social monitoring. Uses twitterapi.io account timelines when TWITTERAPI_IO_KEY is set.
+TWITTERAPI_IO_KEY: str = _get("TWITTERAPI_IO_KEY") or _get("X_API_KEY")
 X_ACCOUNT_HANDLES: list[str] = [
     handle.strip().lstrip("@")
     for handle in _get("X_ACCOUNT_HANDLES").split(",")
     if handle.strip()
 ]
-X_SEARCH_QUERIES: list[str] = [
-    query.strip()
-    for query in _get("X_SEARCH_QUERIES").split(";")
-    if query.strip()
+X_KEYWORDS: list[str] = [
+    term.strip()
+    for term in _get(
+        "X_KEYWORDS",
+        (
+            "diesel,petrol,gasoline,gasoil,fuel,refinery,refineries,"
+            "fuel security,Strait of Hormuz,Hormuz,fuel reserve,"
+            "petroleum reserve,fuel shortage"
+        ),
+    ).split(",")
+    if term.strip()
 ]
 X_MAX_RESULTS: int = max(10, min(_get_int("X_MAX_RESULTS", 25), 100))
 X_LOOKBACK_HOURS: int = max(1, min(_get_int("X_LOOKBACK_HOURS", MAX_ITEM_AGE_HOURS), 168))

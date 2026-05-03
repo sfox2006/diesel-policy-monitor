@@ -124,26 +124,26 @@ EMAIL_TO=ahmed.jawad@mandalapartners.com   # still delivers to your work inbox
 
 ---
 
-### Optional X API monitoring
+### Optional twitterapi.io monitoring
 
-Add your X API v2 Bearer Token as a GitHub Actions repository secret named:
+Add your twitterapi.io API key as a GitHub Actions repository secret named:
 
 ```text
-X_BEARER_TOKEN
+TWITTERAPI_IO_KEY
 ```
 
 Optional GitHub Actions repository variables:
 
 ```text
-X_SEARCH_QUERIES      # semicolon-separated Recent Search queries
 X_ACCOUNT_HANDLES     # comma-separated handles without @
-X_MAX_RESULTS         # default 25, max 100 per query
+X_KEYWORDS            # comma-separated local keyword filter
+X_MAX_RESULTS         # default 25, max 100 matching tweets per account
 X_LOOKBACK_HOURS      # default follows MAX_ITEM_AGE_HOURS, max 168
 X_INCLUDE_RETWEETS    # default false
 X_SECTION_ITEMS       # default 8
 ```
 
-If `X_SEARCH_QUERIES` is blank, the monitor uses a built-in diesel/fuel/Hormuz/refinery query. If `X_ACCOUNT_HANDLES` is set, the same fuel query is also run against those accounts.
+The monitor calls twitterapi.io's selected-account timeline endpoint for each `X_ACCOUNT_HANDLES` entry, then keeps only tweets matching `X_KEYWORDS` such as diesel, petrol, fuel, refineries, and the Strait of Hormuz.
 
 ---
 

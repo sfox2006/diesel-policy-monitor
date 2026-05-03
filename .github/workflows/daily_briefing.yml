@@ -94,9 +94,9 @@ jobs:
           MIN_RELEVANCE_SCORE: ${{ vars.MIN_RELEVANCE_SCORE || '25' }}
           MAX_ITEM_AGE_HOURS: ${{ vars.MAX_ITEM_AGE_HOURS || '96' }}
           REQUEST_DELAY: ${{ vars.REQUEST_DELAY || '0.2' }}
-          X_BEARER_TOKEN: ${{ secrets.X_BEARER_TOKEN }}
-          X_SEARCH_QUERIES: ${{ vars.X_SEARCH_QUERIES || '' }}
+          TWITTERAPI_IO_KEY: ${{ secrets.TWITTERAPI_IO_KEY }}
           X_ACCOUNT_HANDLES: ${{ vars.X_ACCOUNT_HANDLES || '' }}
+          X_KEYWORDS: ${{ vars.X_KEYWORDS || 'diesel,petrol,gasoline,gasoil,fuel,refinery,refineries,fuel security,Strait of Hormuz,Hormuz,fuel reserve,petroleum reserve,fuel shortage' }}
           X_MAX_RESULTS: ${{ vars.X_MAX_RESULTS || '25' }}
           X_LOOKBACK_HOURS: ${{ vars.X_LOOKBACK_HOURS || '96' }}
           X_INCLUDE_RETWEETS: ${{ vars.X_INCLUDE_RETWEETS || 'false' }}
