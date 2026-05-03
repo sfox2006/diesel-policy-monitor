@@ -13,6 +13,7 @@ from policy_monitor.collectors.html_collector import collect_html
 from policy_monitor.collectors.models import PolicyItem
 from policy_monitor.collectors.rss_collector import collect_rss
 from policy_monitor.collectors.sources import SOURCES, Source
+from policy_monitor.collectors.x_collector import collect_x_posts
 
 logger = logging.getLogger(__name__)
 
@@ -103,6 +104,16 @@ def run_all_collectors() -> list[PolicyItem]:
     seen_urls: set[str] = set()
     dropped_age = 0
 
+    x_items = collect_x_posts()
+    for item in x_items:
+        if not item.url or item.url in seen_urls:
+            continue
+        if cutoff and not _within_window(item, cutoff):
+            dropped_age += 1
+            continue
+        seen_urls.add(item.url)
+        all_items.append(item)
+
     sources = _active_sources()
     total_sources = len(sources)
     for index, source in enumerate(sources, start=1):
@@ -131,7 +142,7 @@ def run_all_collectors() -> list[PolicyItem]:
             all_items.append(item)
 
     logger.info(
-        "Collected %d unique items from %d sources (%d dropped: older than %dh)",
+        "Collected %d unique items from %d sources plus X (%d dropped: older than %dh)",
         len(all_items), total_sources, dropped_age, config.MAX_ITEM_AGE_HOURS,
     )
     return all_items

@@ -273,7 +273,7 @@ def send_briefing(
     email_md_path: Path,
     full_briefing_path: Path,
     date_str: str | None = None,
-    subject_prefix: str = "Daily Industrial Policy Briefing",
+    subject_prefix: str = "Daily Diesel & Fuel Policy Briefing",
 ) -> None:
     """
     Send the briefing email via SMTP (STARTTLS).

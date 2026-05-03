@@ -78,6 +78,20 @@ class ScorerTests(unittest.TestCase):
 
         self.assertEqual(score_item(story), 0.0)
 
+    def test_scores_x_diesel_hormuz_signal(self) -> None:
+        story = PolicyItem(
+            title="@energy_minister: Diesel supplies remain tight near the Strait of Hormuz",
+            url="https://x.com/energy_minister/status/123",
+            source_name="X / Energy Minister (@energy_minister)",
+            region="X",
+            source_type="secondary",
+            topics=["x_mentions", "supply_disruption"],
+            published=datetime.now(timezone.utc),
+            summary="@energy_minister: Diesel supplies remain tight near the Strait of Hormuz.",
+        )
+
+        self.assertGreaterEqual(score_item(story), 25.0)
+
     def test_rank_items_filters_zero_score_noise(self) -> None:
         relevant = item("Diesel reserve release planned after fuel stockholding review")
         noise = item("Small modular reactors under development in the United States")

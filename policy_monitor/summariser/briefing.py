@@ -53,6 +53,7 @@ def generate_briefing(
     top = ranked_items[: config.TOP_DEVELOPMENTS]
     watchlist = [i for i in ranked_items if i.is_watchlist][: config.WATCHLIST_ITEMS]
     statements = [i for i in ranked_items if i.is_statement and i not in top][:5]
+    x_signals = [i for i in ranked_items if "x_mentions" in i.topics][: config.X_SECTION_ITEMS]
     tldr = ranked_items[: config.TLDR_BULLETS]
 
     # ── Deep dives for top items ──────────────────────────────────────────────
@@ -74,7 +75,7 @@ def generate_briefing(
     )
 
     email_lines: list[str] = [
-        f"# Daily Industrial Policy Briefing — {date_str}",
+        f"# Daily Diesel & Fuel Policy Briefing — {date_str}",
         "",
         coverage_line,
         "",
@@ -151,9 +152,9 @@ def generate_briefing(
         "",
         "## SECTION 4 — Leader & Official Statements",
         "",
-        "*Public statements on diesel, fuel security, supply chains, imports or trade*",
-        "*by Australian political leaders, public servants, industry heads,*",
-        "*and leaders of countries in Australia's diesel supply chain.*",
+        "*Public statements on diesel, fuel security, reserves, imports or trade*",
+        "*by PMs, presidents, premiers, energy ministers, finance ministers,*",
+        "*trade ministers, transport ministers and relevant public agencies.*",
         "",
     ]
     if statements:
@@ -171,6 +172,25 @@ def generate_briefing(
     email_lines += [
         "---",
         "",
+        "## SECTION 5 — X Signals",
+        "",
+        "*Relevant posts from configured X searches/accounts mentioning diesel,*",
+        "*petrol, refineries, fuel security, Hormuz, or related supply risks.*",
+        "",
+    ]
+    if x_signals:
+        for item in x_signals:
+            email_lines.append(f"- **{item.source_name}**")
+            email_lines.append(f"  → {_one_liner(item)}")
+            email_lines.append(f"  Link: [{item.url}]({item.url})")
+            email_lines.append("")
+    else:
+        email_lines.append("_No relevant X posts flagged today._")
+        email_lines.append("")
+
+    email_lines += [
+        "---",
+        "",
         f"*Briefing generated {today.strftime('%Y-%m-%d %H:%M UTC')} by PolicyMonitor.*",
         f"*Full briefing attached as `full_briefing_{date_slug}.md`.*",
         "",
@@ -181,7 +201,7 @@ def generate_briefing(
 
     # ── Build full_briefing.md ────────────────────────────────────────────────
     full_lines: list[str] = [
-        f"# Full Industrial Policy Briefing — {date_str}",
+        f"# Full Diesel & Fuel Policy Briefing — {date_str}",
         f"*{len(ranked_items)} items collected and ranked*",
         "",
         "---",

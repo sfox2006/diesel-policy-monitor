@@ -76,6 +76,23 @@ USER_AGENT: str = _get(
     "USER_AGENT", "PolicyMonitor/1.0 (research@mandalapartners.com)"
 )
 
+# X API / social monitoring. Uses X API v2 Recent Search when X_BEARER_TOKEN is set.
+X_BEARER_TOKEN: str = _get("X_BEARER_TOKEN")
+X_ACCOUNT_HANDLES: list[str] = [
+    handle.strip().lstrip("@")
+    for handle in _get("X_ACCOUNT_HANDLES").split(",")
+    if handle.strip()
+]
+X_SEARCH_QUERIES: list[str] = [
+    query.strip()
+    for query in _get("X_SEARCH_QUERIES").split(";")
+    if query.strip()
+]
+X_MAX_RESULTS: int = max(10, min(_get_int("X_MAX_RESULTS", 25), 100))
+X_LOOKBACK_HOURS: int = max(1, min(_get_int("X_LOOKBACK_HOURS", MAX_ITEM_AGE_HOURS), 168))
+X_INCLUDE_RETWEETS: bool = _get("X_INCLUDE_RETWEETS", "false").lower() in {"1", "true", "yes"}
+X_SECTION_ITEMS: int = max(0, _get_int("X_SECTION_ITEMS", 8))
+
 # ── Ensure output directories exist ──────────────────────────────────────────
 for _d in (OUTPUT_DIR, DEEP_DIVES_DIR, LOG_DIR):
     _d.mkdir(parents=True, exist_ok=True)

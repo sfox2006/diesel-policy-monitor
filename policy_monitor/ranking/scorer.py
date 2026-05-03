@@ -239,6 +239,8 @@ NEGATIVE_PATTERNS: list[tuple[str, float]] = [
 # it is about diesel, refined liquid fuels, or a near-term supply risk.
 DIRECT_FUEL_PATTERNS: list[str] = [
     r"\bdiesel\b",
+    r"\bpetrol\b",
+    r"\bgasoline\b",
     r"\bgasoil\b",
     r"\bdistillate\w*\b",
     r"\bliquid fuel\w*\b",
@@ -254,6 +256,8 @@ DIRECT_FUEL_PATTERNS: list[str] = [
 
 HARD_FUEL_PATTERNS: list[str] = [
     r"\bdiesel\b",
+    r"\bpetrol\b",
+    r"\bgasoline\b",
     r"\bgasoil\b",
     r"\bdistillate\w*\b",
     r"\bliquid fuel\w*\b",
@@ -268,6 +272,8 @@ HARD_FUEL_PATTERNS: list[str] = [
 
 CORE_DIESEL_PATTERNS: list[str] = [
     r"\bdiesel\b",
+    r"\bpetrol\b",
+    r"\bgasoline\b",
     r"\bgasoil\b",
     r"\bdistillate\w*\b",
     r"\bmiddle distillate\w*\b",
@@ -278,6 +284,8 @@ CORE_DIESEL_PATTERNS: list[str] = [
 
 STRONG_MEDIA_FUEL_PATTERNS: list[str] = [
     r"\bdiesel\b",
+    r"\bpetrol\b",
+    r"\bgasoline\b",
     r"\bgasoil\b",
     r"\bdistillate\w*\b",
     r"\bmiddle distillate\w*\b",
@@ -287,7 +295,8 @@ STRONG_MEDIA_FUEL_PATTERNS: list[str] = [
     r"\bminimum stockholding obligation|mso\b",
     r"\bterminal gate price\w*\b",
     r"\bretail price\w*.{0,30}(fuel|petrol|diesel)\b",
-    r"\b(fuel|diesel|petrol).{0,30}(shortage|disruption|outage|rationing)\b",
+    r"\b(fuel|diesel|petrol|gasoline).{0,30}(shortage|disruption|outage|rationing)\b",
+    r"\b(refinery|refineries|refiner)\b.{0,40}(outage|fire|shutdown|strike|disruption|explosion|fuel|diesel|petrol|gasoline|oil)\b",
     r"\b(strait of hormuz|hormuz|strait of malacca|malacca strait).{0,80}(fuel|oil|diesel|tanker|shipping)\b",
 ]
 
