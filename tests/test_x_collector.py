@@ -40,7 +40,10 @@ class XCollectorTests(unittest.TestCase):
         self.assertEqual(items[0].published, datetime(2026, 5, 4, tzinfo=timezone.utc))
         get.assert_called_once()
         self.assertEqual(get.call_args.kwargs["headers"], {"X-API-Key": "token"})
-        self.assertEqual(get.call_args.kwargs["params"], {"userName": "energy_minister"})
+        self.assertEqual(
+            get.call_args.kwargs["params"],
+            {"userName": "energy_minister", "includeReplies": "false"},
+        )
 
     def test_collect_x_posts_filters_unrelated_tweets(self) -> None:
         response = Mock()
@@ -85,6 +88,107 @@ class XCollectorTests(unittest.TestCase):
             patch.object(x_collector.config, "X_INCLUDE_RETWEETS", False), \
             patch("policy_monitor.collectors.x_collector.requests.get", return_value=response):
             self.assertEqual(x_collector.collect_x_posts(), [])
+
+    def test_collect_x_posts_filters_podcast_links(self) -> None:
+        response = Mock()
+        response.raise_for_status.return_value = None
+        response.json.return_value = {
+            "tweets": [
+                {
+                    "id": "126",
+                    "text": "Diesel and refinery market update",
+                    "author": {"userName": "energy_podcast"},
+                    "entities": {
+                        "urls": [
+                            {"expanded_url": "https://open.spotify.com/show/example"}
+                        ]
+                    },
+                }
+            ]
+        }
+
+        with patch.object(x_collector.config, "TWITTERAPI_IO_KEY", "token"), \
+            patch.object(x_collector.config, "X_ACCOUNT_HANDLES", ["energy_podcast"]), \
+            patch.object(x_collector.config, "X_KEYWORDS", ["diesel", "refinery"]), \
+            patch.object(x_collector.config, "X_MAX_MATCHES_PER_ACCOUNT", 10), \
+            patch.object(x_collector.config, "X_DEFAULT_SCAN_LIMIT", 25), \
+            patch.object(x_collector.config, "X_PERSON_ACCOUNT_HANDLES", []), \
+            patch.object(x_collector.config, "X_MEDIA_ACCOUNT_HANDLES", []), \
+            patch.object(x_collector.config, "X_INCLUDE_RETWEETS", False), \
+            patch("policy_monitor.collectors.x_collector.requests.get", return_value=response):
+            self.assertEqual(x_collector.collect_x_posts(), [])
+
+    def test_collect_x_posts_uses_person_scan_limit(self) -> None:
+        tweets = [
+            {
+                "id": str(idx),
+                "text": f"Diesel policy update {idx}",
+                "author": {"userName": "minister"},
+            }
+            for idx in range(20)
+        ]
+        response = Mock()
+        response.raise_for_status.return_value = None
+        response.json.return_value = {"tweets": tweets, "has_next_page": True, "next_cursor": "next"}
+
+        with patch.object(x_collector.config, "TWITTERAPI_IO_KEY", "token"), \
+            patch.object(x_collector.config, "X_ACCOUNT_HANDLES", ["minister"]), \
+            patch.object(x_collector.config, "X_PERSON_ACCOUNT_HANDLES", ["minister"]), \
+            patch.object(x_collector.config, "X_MEDIA_ACCOUNT_HANDLES", []), \
+            patch.object(x_collector.config, "X_KEYWORDS", ["diesel"]), \
+            patch.object(x_collector.config, "X_PERSON_SCAN_LIMIT", 10), \
+            patch.object(x_collector.config, "X_MAX_MATCHES_PER_ACCOUNT", 100), \
+            patch.object(x_collector.config, "X_INCLUDE_RETWEETS", False), \
+            patch("policy_monitor.collectors.x_collector.requests.get", return_value=response) as get:
+            items = x_collector.collect_x_posts()
+
+        self.assertEqual(len(items), 10)
+        get.assert_called_once()
+
+    def test_collect_x_posts_paginates_for_media_scan_limit(self) -> None:
+        first = Mock()
+        first.raise_for_status.return_value = None
+        first.json.return_value = {
+            "tweets": [
+                {
+                    "id": str(idx),
+                    "text": f"Diesel market update {idx}",
+                    "author": {"userName": "Reuters"},
+                }
+                for idx in range(20)
+            ],
+            "has_next_page": True,
+            "next_cursor": "cursor-1",
+        }
+        second = Mock()
+        second.raise_for_status.return_value = None
+        second.json.return_value = {
+            "tweets": [
+                {
+                    "id": str(idx),
+                    "text": f"Diesel market update {idx}",
+                    "author": {"userName": "Reuters"},
+                }
+                for idx in range(20, 40)
+            ],
+            "has_next_page": False,
+            "next_cursor": "",
+        }
+
+        with patch.object(x_collector.config, "TWITTERAPI_IO_KEY", "token"), \
+            patch.object(x_collector.config, "X_ACCOUNT_HANDLES", ["Reuters"]), \
+            patch.object(x_collector.config, "X_PERSON_ACCOUNT_HANDLES", []), \
+            patch.object(x_collector.config, "X_MEDIA_ACCOUNT_HANDLES", ["Reuters"]), \
+            patch.object(x_collector.config, "X_KEYWORDS", ["diesel"]), \
+            patch.object(x_collector.config, "X_MEDIA_SCAN_LIMIT", 25), \
+            patch.object(x_collector.config, "X_MAX_MATCHES_PER_ACCOUNT", 100), \
+            patch.object(x_collector.config, "X_INCLUDE_RETWEETS", False), \
+            patch("policy_monitor.collectors.x_collector.requests.get", side_effect=[first, second]) as get:
+            items = x_collector.collect_x_posts()
+
+        self.assertEqual(len(items), 25)
+        self.assertEqual(get.call_count, 2)
+        self.assertEqual(get.call_args_list[1].kwargs["params"]["cursor"], "cursor-1")
 
     def test_collect_x_posts_skips_when_token_missing(self) -> None:
         with patch.object(x_collector.config, "TWITTERAPI_IO_KEY", ""):

@@ -136,14 +136,19 @@ Optional GitHub Actions repository variables:
 
 ```text
 X_ACCOUNT_HANDLES     # comma-separated handles without @; defaults to the built-in watchlist
+X_PERSON_ACCOUNT_HANDLES # handles scanned with the person limit
+X_MEDIA_ACCOUNT_HANDLES  # handles scanned with the media limit
 X_KEYWORDS            # comma-separated local keyword filter
-X_MAX_RESULTS         # default 25, max 100 matching tweets per account
+X_MAX_MATCHES_PER_ACCOUNT # default 25 matching tweets kept per account
+X_DEFAULT_SCAN_LIMIT  # default 25 recent tweets inspected for ordinary accounts
+X_PERSON_SCAN_LIMIT   # default 10 recent tweets inspected for person accounts
+X_MEDIA_SCAN_LIMIT    # default 200 recent tweets inspected for media accounts
 X_LOOKBACK_HOURS      # default follows MAX_ITEM_AGE_HOURS, max 168
 X_INCLUDE_RETWEETS    # default false
 X_SECTION_ITEMS       # default 8
 ```
 
-The default account watchlist includes Australian ministers/regulators, energy and shipping bodies, Reuters and regional media, plus selected US, Iran, Japan, Malaysia, Singapore, and Thailand accounts. The monitor calls twitterapi.io's selected-account timeline endpoint for each `X_ACCOUNT_HANDLES` entry, then keeps only tweets matching `X_KEYWORDS` such as diesel, petrol, fuel, refineries, and the Strait of Hormuz.
+The default account watchlist includes Australian ministers/regulators, energy and shipping bodies, Reuters and regional media, plus selected US, Iran, Japan, Malaysia, Singapore, and Thailand accounts. The monitor calls twitterapi.io's selected-account timeline endpoint for each `X_ACCOUNT_HANDLES` entry, paginating where needed. Person accounts scan 10 recent tweets by default, media accounts scan up to 200, and other accounts scan 25. It keeps only tweets matching `X_KEYWORDS` such as diesel, petrol, fuel, refineries, and the Strait of Hormuz, and filters obvious podcast/audio posts using phrases and domains such as Spotify, Apple Podcasts, SoundCloud, Acast, Omny, and similar links.
 
 ---
 
