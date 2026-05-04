@@ -9,6 +9,7 @@ email briefing.
 from __future__ import annotations
 
 import logging
+import re
 from datetime import datetime
 from typing import Any
 
@@ -144,10 +145,16 @@ def _is_retweet(tweet: dict[str, Any], text: str) -> bool:
     return text.startswith("RT @") or tweet_type == "retweet" or bool(tweet.get("retweetedTweet"))
 
 
+def _is_low_signal_tweet(text: str) -> bool:
+    return bool(re.search(r"\blisten\b", text, flags=re.IGNORECASE))
+
+
 def _to_item(tweet: dict[str, Any], fallback_handle: str) -> PolicyItem | None:
     tweet_id = _tweet_id(tweet)
     text = _tweet_text(tweet)
     if not text or not _matches_keywords(text):
+        return None
+    if _is_low_signal_tweet(text):
         return None
     if not config.X_INCLUDE_RETWEETS and _is_retweet(tweet, text):
         return None

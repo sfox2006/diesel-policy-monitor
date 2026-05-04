@@ -65,6 +65,27 @@ class XCollectorTests(unittest.TestCase):
             patch("policy_monitor.collectors.x_collector.requests.get", return_value=response):
             self.assertEqual(x_collector.collect_x_posts(), [])
 
+    def test_collect_x_posts_filters_listen_tweets(self) -> None:
+        response = Mock()
+        response.raise_for_status.return_value = None
+        response.json.return_value = {
+            "tweets": [
+                {
+                    "id": "125",
+                    "text": "Listen to our latest podcast on diesel and refinery markets",
+                    "author": {"userName": "energy_podcast"},
+                }
+            ]
+        }
+
+        with patch.object(x_collector.config, "TWITTERAPI_IO_KEY", "token"), \
+            patch.object(x_collector.config, "X_ACCOUNT_HANDLES", ["energy_podcast"]), \
+            patch.object(x_collector.config, "X_KEYWORDS", ["diesel", "refinery"]), \
+            patch.object(x_collector.config, "X_MAX_RESULTS", 10), \
+            patch.object(x_collector.config, "X_INCLUDE_RETWEETS", False), \
+            patch("policy_monitor.collectors.x_collector.requests.get", return_value=response):
+            self.assertEqual(x_collector.collect_x_posts(), [])
+
     def test_collect_x_posts_skips_when_token_missing(self) -> None:
         with patch.object(x_collector.config, "TWITTERAPI_IO_KEY", ""):
             self.assertEqual(x_collector.collect_x_posts(), [])

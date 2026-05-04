@@ -50,11 +50,12 @@ def generate_briefing(
     date_str = today.strftime("%d %B %Y")
     date_slug = today.strftime("%Y-%m-%d")
 
-    top = ranked_items[: config.TOP_DEVELOPMENTS]
-    watchlist = [i for i in ranked_items if i.is_watchlist][: config.WATCHLIST_ITEMS]
-    statements = [i for i in ranked_items if i.is_statement and i not in top][:5]
     x_signals = [i for i in ranked_items if "x_mentions" in i.topics][: config.X_SECTION_ITEMS]
-    tldr = ranked_items[: config.TLDR_BULLETS]
+    non_x_items = [i for i in ranked_items if "x_mentions" not in i.topics]
+    top = non_x_items[: config.TOP_DEVELOPMENTS]
+    watchlist = [i for i in non_x_items if i.is_watchlist][: config.WATCHLIST_ITEMS]
+    statements = [i for i in non_x_items if i.is_statement and i not in top][:5]
+    tldr = non_x_items[: config.TLDR_BULLETS]
 
     # ── Deep dives for top items ──────────────────────────────────────────────
     logger.info("Generating deep dives for %d top items…", len(top))
