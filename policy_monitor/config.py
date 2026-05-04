@@ -38,7 +38,7 @@ DEFAULT_X_ACCOUNT_HANDLES = (
     "Opecsecretariat,Hellenicship,realDonaldTrump,CENTCOM,araghchi,"
     "Meti_nippon,JOGMEC_JP,takaichi_sanae,NikkeiAsia,AnwarIbrahim,"
     "Lawrencewongst,MTI_sg,MFAsg,channelnewsasia,Bangkokpostnews,MFAThai,"
-    "Reuters"
+    "Reuters,abcpolitics,financialreview,AJEnglish,FTenergy,WSJenergy,australian"
 )
 
 DEFAULT_X_PERSON_ACCOUNT_HANDLES = (
@@ -49,7 +49,8 @@ DEFAULT_X_PERSON_ACCOUNT_HANDLES = (
 )
 
 DEFAULT_X_MEDIA_ACCOUNT_HANDLES = (
-    "Hellenicship,NikkeiAsia,channelnewsasia,Bangkokpostnews,Reuters"
+    "Hellenicship,NikkeiAsia,channelnewsasia,Bangkokpostnews,Reuters,"
+    "abcpolitics,financialreview,AJEnglish,FTenergy,WSJenergy,australian"
 )
 
 DEFAULT_X_KEYWORDS = (
@@ -131,7 +132,7 @@ X_MEDIA_ACCOUNT_HANDLES: list[str] = [
 ]
 X_DEFAULT_SCAN_LIMIT: int = max(1, min(_get_int("X_DEFAULT_SCAN_LIMIT", X_MAX_RESULTS), 200))
 X_PERSON_SCAN_LIMIT: int = max(1, min(_get_int("X_PERSON_SCAN_LIMIT", 10), 200))
-X_MEDIA_SCAN_LIMIT: int = max(1, min(_get_int("X_MEDIA_SCAN_LIMIT", 200), 200))
+X_MEDIA_SCAN_LIMIT: int = max(1, min(_get_int("X_MEDIA_SCAN_LIMIT", 75), 200))
 X_LOOKBACK_HOURS: int = max(1, min(_get_int("X_LOOKBACK_HOURS", MAX_ITEM_AGE_HOURS), 168))
 X_INCLUDE_RETWEETS: bool = _get("X_INCLUDE_RETWEETS", "false").lower() in {"1", "true", "yes"}
 X_SECTION_ITEMS: int = max(0, _get_int("X_SECTION_ITEMS", 8))
