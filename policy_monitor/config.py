@@ -30,6 +30,24 @@ def _get_float(key: str, default: float = 0.0) -> float:
         return default
 
 
+DEFAULT_X_ACCOUNT_HANDLES = (
+    "AlboMP,JEChalmers,SenatorWong,MadeleineMHKing,ayrestim,"
+    "senator_farrell,PatConroy1,murraywatt,CatherineKingMP,AngusTaylorMP,"
+    "ACCCgovau,dfat,mineralscouncil,Nationalfarmers,au_energy_prod,"
+    "Johnkehoe23,angelamacd,NickToscano1,JavierBlas,IEA,FatihBirol,"
+    "Opecsecretariat,Hellenicship,realDonaldTrump,CENTCOM,araghchi,"
+    "Meti_nippon,JOGMEC_JP,takaichi_sanae,NikkeiAsia,AnwarIbrahim,"
+    "Lawrencewongst,MTI_sg,MFAsg,channelnewsasia,Bangkokpostnews,MFAThai,"
+    "Reuters"
+)
+
+DEFAULT_X_KEYWORDS = (
+    "diesel,petrol,gasoline,gasoil,fuel,refinery,refineries,"
+    "fuel security,Strait of Hormuz,Hormuz,fuel reserve,"
+    "petroleum reserve,fuel shortage"
+)
+
+
 # ── SMTP ──────────────────────────────────────────────────────────────────────
 SMTP_HOST: str = _get("SMTP_HOST", "smtp.gmail.com")
 SMTP_PORT: int = _get_int("SMTP_PORT", 587)
@@ -80,19 +98,12 @@ USER_AGENT: str = _get(
 TWITTERAPI_IO_KEY: str = _get("TWITTERAPI_IO_KEY") or _get("X_API_KEY")
 X_ACCOUNT_HANDLES: list[str] = [
     handle.strip().lstrip("@")
-    for handle in _get("X_ACCOUNT_HANDLES").split(",")
+    for handle in (_get("X_ACCOUNT_HANDLES") or DEFAULT_X_ACCOUNT_HANDLES).split(",")
     if handle.strip()
 ]
 X_KEYWORDS: list[str] = [
     term.strip()
-    for term in _get(
-        "X_KEYWORDS",
-        (
-            "diesel,petrol,gasoline,gasoil,fuel,refinery,refineries,"
-            "fuel security,Strait of Hormuz,Hormuz,fuel reserve,"
-            "petroleum reserve,fuel shortage"
-        ),
-    ).split(",")
+    for term in (_get("X_KEYWORDS") or DEFAULT_X_KEYWORDS).split(",")
     if term.strip()
 ]
 X_MAX_RESULTS: int = max(10, min(_get_int("X_MAX_RESULTS", 25), 100))

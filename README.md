@@ -135,7 +135,7 @@ TWITTERAPI_IO_KEY
 Optional GitHub Actions repository variables:
 
 ```text
-X_ACCOUNT_HANDLES     # comma-separated handles without @
+X_ACCOUNT_HANDLES     # comma-separated handles without @; defaults to the built-in watchlist
 X_KEYWORDS            # comma-separated local keyword filter
 X_MAX_RESULTS         # default 25, max 100 matching tweets per account
 X_LOOKBACK_HOURS      # default follows MAX_ITEM_AGE_HOURS, max 168
@@ -143,7 +143,7 @@ X_INCLUDE_RETWEETS    # default false
 X_SECTION_ITEMS       # default 8
 ```
 
-The monitor calls twitterapi.io's selected-account timeline endpoint for each `X_ACCOUNT_HANDLES` entry, then keeps only tweets matching `X_KEYWORDS` such as diesel, petrol, fuel, refineries, and the Strait of Hormuz.
+The default account watchlist includes Australian ministers/regulators, energy and shipping bodies, Reuters and regional media, plus selected US, Iran, Japan, Malaysia, Singapore, and Thailand accounts. The monitor calls twitterapi.io's selected-account timeline endpoint for each `X_ACCOUNT_HANDLES` entry, then keeps only tweets matching `X_KEYWORDS` such as diesel, petrol, fuel, refineries, and the Strait of Hormuz.
 
 ---
 

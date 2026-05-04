@@ -95,7 +95,7 @@ jobs:
           MAX_ITEM_AGE_HOURS: ${{ vars.MAX_ITEM_AGE_HOURS || '96' }}
           REQUEST_DELAY: ${{ vars.REQUEST_DELAY || '0.2' }}
           TWITTERAPI_IO_KEY: ${{ secrets.TWITTERAPI_IO_KEY }}
-          X_ACCOUNT_HANDLES: ${{ vars.X_ACCOUNT_HANDLES || '' }}
+          X_ACCOUNT_HANDLES: ${{ vars.X_ACCOUNT_HANDLES || 'AlboMP,JEChalmers,SenatorWong,MadeleineMHKing,ayrestim,senator_farrell,PatConroy1,murraywatt,CatherineKingMP,AngusTaylorMP,ACCCgovau,dfat,mineralscouncil,Nationalfarmers,au_energy_prod,Johnkehoe23,angelamacd,NickToscano1,JavierBlas,IEA,FatihBirol,Opecsecretariat,Hellenicship,realDonaldTrump,CENTCOM,araghchi,Meti_nippon,JOGMEC_JP,takaichi_sanae,NikkeiAsia,AnwarIbrahim,Lawrencewongst,MTI_sg,MFAsg,channelnewsasia,Bangkokpostnews,MFAThai,Reuters' }}
           X_KEYWORDS: ${{ vars.X_KEYWORDS || 'diesel,petrol,gasoline,gasoil,fuel,refinery,refineries,fuel security,Strait of Hormuz,Hormuz,fuel reserve,petroleum reserve,fuel shortage' }}
           X_MAX_RESULTS: ${{ vars.X_MAX_RESULTS || '25' }}
           X_LOOKBACK_HOURS: ${{ vars.X_LOOKBACK_HOURS || '96' }}
