@@ -104,6 +104,7 @@ jobs:
           X_DEFAULT_SCAN_LIMIT: ${{ vars.X_DEFAULT_SCAN_LIMIT || '25' }}
           X_PERSON_SCAN_LIMIT: ${{ vars.X_PERSON_SCAN_LIMIT || '25' }}
           X_MEDIA_SCAN_LIMIT: ${{ vars.X_MEDIA_SCAN_LIMIT || '125' }}
+          X_LOOKBACK_HOURS: ${{ vars.X_LOOKBACK_HOURS || '24' }}
           X_INCLUDE_RETWEETS: ${{ vars.X_INCLUDE_RETWEETS || 'false' }}
           X_SECTION_ITEMS: ${{ vars.X_SECTION_ITEMS || '8' }}
           FAIL_ON_EMAIL_ERROR: 'true'

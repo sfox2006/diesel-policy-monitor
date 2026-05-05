@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import logging
 import re
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 import requests
@@ -226,6 +226,7 @@ def _iter_account_tweets(
     handle: str,
     headers: dict[str, str],
     scan_limit: int,
+    cutoff: datetime,
 ) -> list[dict[str, Any]]:
     tweets: list[dict[str, Any]] = []
     cursor = ""
@@ -246,13 +247,20 @@ def _iter_account_tweets(
         resp.raise_for_status()
         payload = resp.json()
         pages_fetched += 1
+        reached_cutoff = False
 
         for tweet in _tweet_records(payload):
+            published = _created_at(tweet)
+            if published and published.astimezone(timezone.utc) < cutoff:
+                reached_cutoff = True
+                continue
             tweets.append(tweet)
             if len(tweets) >= scan_limit:
                 break
 
         cursor = str(payload.get("next_cursor") or "")
+        if reached_cutoff:
+            break
         if not payload.get("has_next_page") or not cursor:
             break
 
@@ -299,12 +307,18 @@ def collect_x_posts() -> list[PolicyItem]:
     headers = {"X-API-Key": config.TWITTERAPI_IO_KEY}
     items: list[PolicyItem] = []
     seen: set[str] = set()
+    cutoff = datetime.now(timezone.utc) - timedelta(hours=config.X_LOOKBACK_HOURS)
 
     for handle in config.X_ACCOUNT_HANDLES:
         scan_limit = _scan_limit_for_handle(handle)
-        logger.info("Fetching up to %d recent tweets for @%s via twitterapi.io", scan_limit, handle)
+        logger.info(
+            "Fetching up to %d tweets since %s for @%s via twitterapi.io",
+            scan_limit,
+            cutoff.strftime("%Y-%m-%d %H:%M UTC"),
+            handle,
+        )
         try:
-            tweets = _iter_account_tweets(handle, headers, scan_limit)
+            tweets = _iter_account_tweets(handle, headers, scan_limit, cutoff)
         except requests.RequestException as exc:
             logger.error("twitterapi.io fetch failed for @%s: %s", handle, exc)
             continue

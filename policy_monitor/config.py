@@ -133,6 +133,7 @@ X_MEDIA_ACCOUNT_HANDLES: list[str] = [
 X_DEFAULT_SCAN_LIMIT: int = max(1, min(_get_int("X_DEFAULT_SCAN_LIMIT", 25), 500))
 X_PERSON_SCAN_LIMIT: int = max(1, min(_get_int("X_PERSON_SCAN_LIMIT", 25), 500))
 X_MEDIA_SCAN_LIMIT: int = max(1, min(_get_int("X_MEDIA_SCAN_LIMIT", 125), 500))
+X_LOOKBACK_HOURS: int = max(1, min(_get_int("X_LOOKBACK_HOURS", 24), 168))
 X_INCLUDE_RETWEETS: bool = _get("X_INCLUDE_RETWEETS", "false").lower() in {"1", "true", "yes"}
 X_SECTION_ITEMS: int = max(0, _get_int("X_SECTION_ITEMS", 8))
 

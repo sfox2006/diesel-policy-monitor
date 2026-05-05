@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 import unittest
 from unittest.mock import Mock, patch
 
@@ -202,6 +202,92 @@ class XCollectorTests(unittest.TestCase):
             items = x_collector.collect_x_posts()
 
         self.assertEqual(len(items), 25)
+
+    def test_collect_x_posts_ignores_older_tweets_even_under_scan_limit(self) -> None:
+        recent = datetime.now(timezone.utc) - timedelta(hours=2)
+        older = datetime.now(timezone.utc) - timedelta(hours=30)
+        response = Mock()
+        response.raise_for_status.return_value = None
+        response.json.return_value = {
+            "tweets": [
+                {
+                    "id": "recent",
+                    "text": "Diesel policy update",
+                    "createdAt": recent.isoformat(),
+                    "author": {"userName": "minister"},
+                },
+                {
+                    "id": "old",
+                    "text": "Diesel policy update from last week",
+                    "createdAt": older.isoformat(),
+                    "author": {"userName": "minister"},
+                },
+            ],
+            "has_next_page": False,
+            "next_cursor": "",
+        }
+
+        with patch.object(x_collector.config, "TWITTERAPI_IO_KEY", "token"), \
+            patch.object(x_collector.config, "X_ACCOUNT_HANDLES", ["minister"]), \
+            patch.object(x_collector.config, "X_PERSON_ACCOUNT_HANDLES", ["minister"]), \
+            patch.object(x_collector.config, "X_MEDIA_ACCOUNT_HANDLES", []), \
+            patch.object(x_collector.config, "X_KEYWORDS", ["diesel"]), \
+            patch.object(x_collector.config, "X_PERSON_SCAN_LIMIT", 25), \
+            patch.object(x_collector.config, "X_LOOKBACK_HOURS", 24), \
+            patch.object(x_collector.config, "X_INCLUDE_RETWEETS", False), \
+            patch("policy_monitor.collectors.x_collector.requests.get", return_value=response):
+            items = x_collector.collect_x_posts()
+
+        self.assertEqual([item.url for item in items], ["https://x.com/minister/status/recent"])
+
+    def test_collect_x_posts_paginates_until_lookback_cutoff_when_under_limit(self) -> None:
+        recent = datetime.now(timezone.utc) - timedelta(hours=2)
+        older = datetime.now(timezone.utc) - timedelta(hours=30)
+        first = Mock()
+        first.raise_for_status.return_value = None
+        first.json.return_value = {
+            "tweets": [
+                {
+                    "id": str(idx),
+                    "text": f"Diesel policy update {idx}",
+                    "createdAt": recent.isoformat(),
+                    "author": {"userName": "minister"},
+                }
+                for idx in range(10)
+            ],
+            "has_next_page": True,
+            "next_cursor": "cursor-1",
+        }
+        second = Mock()
+        second.raise_for_status.return_value = None
+        second.json.return_value = {
+            "tweets": [
+                {
+                    "id": "old",
+                    "text": "Diesel policy update old",
+                    "createdAt": older.isoformat(),
+                    "author": {"userName": "minister"},
+                }
+            ],
+            "has_next_page": True,
+            "next_cursor": "cursor-2",
+        }
+
+        with patch.object(x_collector.config, "TWITTERAPI_IO_KEY", "token"), \
+            patch.object(x_collector.config, "X_ACCOUNT_HANDLES", ["minister"]), \
+            patch.object(x_collector.config, "X_PERSON_ACCOUNT_HANDLES", ["minister"]), \
+            patch.object(x_collector.config, "X_MEDIA_ACCOUNT_HANDLES", []), \
+            patch.object(x_collector.config, "X_KEYWORDS", ["diesel"]), \
+            patch.object(x_collector.config, "X_PERSON_SCAN_LIMIT", 25), \
+            patch.object(x_collector.config, "X_LOOKBACK_HOURS", 24), \
+            patch.object(x_collector.config, "X_MAX_MATCHES_PER_ACCOUNT", 100), \
+            patch.object(x_collector.config, "X_INCLUDE_RETWEETS", False), \
+            patch("policy_monitor.collectors.x_collector.requests.get", side_effect=[first, second]) as get:
+            items = x_collector.collect_x_posts()
+
+        self.assertEqual(len(items), 10)
+        self.assertEqual(get.call_count, 2)
+        self.assertEqual(get.call_args_list[1].kwargs["params"]["cursor"], "cursor-1")
 
     def test_collect_x_posts_stops_at_scan_limit_when_paging(self) -> None:
         first = Mock()
