@@ -118,8 +118,8 @@ X_KEYWORDS: list[str] = [
     for term in (_get("X_KEYWORDS") or DEFAULT_X_KEYWORDS).split(",")
     if term.strip()
 ]
-X_MAX_RESULTS: int = max(10, min(_get_int("X_MAX_RESULTS", 25), 100))
-X_MAX_MATCHES_PER_ACCOUNT: int = max(1, min(_get_int("X_MAX_MATCHES_PER_ACCOUNT", X_MAX_RESULTS), 100))
+X_MAX_RESULTS: int = max(10, min(_get_int("X_MAX_RESULTS", 25), 500))
+X_MAX_MATCHES_PER_ACCOUNT: int = max(1, min(_get_int("X_MAX_MATCHES_PER_ACCOUNT", 500), 500))
 X_PERSON_ACCOUNT_HANDLES: list[str] = [
     handle.strip().lstrip("@")
     for handle in (_get("X_PERSON_ACCOUNT_HANDLES") or DEFAULT_X_PERSON_ACCOUNT_HANDLES).split(",")
@@ -130,10 +130,8 @@ X_MEDIA_ACCOUNT_HANDLES: list[str] = [
     for handle in (_get("X_MEDIA_ACCOUNT_HANDLES") or DEFAULT_X_MEDIA_ACCOUNT_HANDLES).split(",")
     if handle.strip()
 ]
-X_DEFAULT_SCAN_LIMIT: int = max(1, min(_get_int("X_DEFAULT_SCAN_LIMIT", X_MAX_RESULTS), 200))
-X_PERSON_SCAN_LIMIT: int = max(1, min(_get_int("X_PERSON_SCAN_LIMIT", 10), 200))
-X_MEDIA_SCAN_LIMIT: int = max(1, min(_get_int("X_MEDIA_SCAN_LIMIT", 75), 200))
-X_LOOKBACK_HOURS: int = max(1, min(_get_int("X_LOOKBACK_HOURS", MAX_ITEM_AGE_HOURS), 168))
+X_MAX_SCAN_PAGES_PER_ACCOUNT: int = max(1, min(_get_int("X_MAX_SCAN_PAGES_PER_ACCOUNT", 100), 100))
+X_LOOKBACK_HOURS: int = max(1, min(_get_int("X_LOOKBACK_HOURS", 24), 168))
 X_INCLUDE_RETWEETS: bool = _get("X_INCLUDE_RETWEETS", "false").lower() in {"1", "true", "yes"}
 X_SECTION_ITEMS: int = max(0, _get_int("X_SECTION_ITEMS", 8))
 
