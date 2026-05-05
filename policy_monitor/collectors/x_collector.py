@@ -213,8 +213,11 @@ def _is_low_signal_tweet_record(tweet: dict[str, Any], text: str) -> bool:
 
 def _scan_limit_for_handle(handle: str) -> int:
     handle_key = handle.strip().lstrip("@").lower()
+    low_cap_handles = {h.lower() for h in config.X_LOW_CAP_ACCOUNT_HANDLES}
     person_handles = {h.lower() for h in config.X_PERSON_ACCOUNT_HANDLES}
     media_handles = {h.lower() for h in config.X_MEDIA_ACCOUNT_HANDLES}
+    if handle_key in low_cap_handles:
+        return config.X_LOW_CAP_SCAN_LIMIT
     if handle_key in media_handles:
         return config.X_MEDIA_SCAN_LIMIT
     if handle_key in person_handles:

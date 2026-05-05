@@ -138,17 +138,19 @@ Optional GitHub Actions repository variables:
 X_ACCOUNT_HANDLES     # comma-separated handles without @; defaults to the built-in watchlist
 X_PERSON_ACCOUNT_HANDLES # handles scanned with the person limit
 X_MEDIA_ACCOUNT_HANDLES  # handles scanned with the media limit
+X_LOW_CAP_ACCOUNT_HANDLES # handles scanned with the low-volume account limit
 X_KEYWORDS            # comma-separated local keyword filter
 X_MAX_MATCHES_PER_ACCOUNT # default 500 matching tweets kept per account
 X_DEFAULT_SCAN_LIMIT  # default 25 recent tweets for uncategorised accounts
 X_PERSON_SCAN_LIMIT   # default 25 recent tweets for individual/person accounts
 X_MEDIA_SCAN_LIMIT    # default 125 recent tweets for media accounts
+X_LOW_CAP_SCAN_LIMIT  # default 5 recent tweets for nominated industry/union accounts
 X_LOOKBACK_HOURS      # default 24; older tweets are ignored even if under the scan limit
 X_INCLUDE_RETWEETS    # default false
 X_SECTION_ITEMS       # default 8
 ```
 
-The default account watchlist includes Australian ministers/regulators, energy and shipping bodies, Reuters, ABC Politics, AFR, Al Jazeera English, FT Energy, WSJ Energy and regional media, plus selected US, Iran, Japan, Malaysia, Singapore, and Thailand accounts. The monitor calls twitterapi.io's selected-account timeline endpoint for each `X_ACCOUNT_HANDLES` entry and scans tweets from the last 24 hours, capped at the most recent 25 tweets for individual/person accounts and 125 tweets for media accounts by default. Older tweets are ignored even when the account has fewer tweets than its cap. It keeps only tweets matching `X_KEYWORDS` such as diesel, petrol, fuel, refineries, and the Strait of Hormuz, and filters obvious podcast/audio posts using phrases and domains such as Spotify, Apple Podcasts, SoundCloud, Acast, Omny, and similar links.
+The default account watchlist includes Australian ministers/regulators, energy and shipping bodies, Reuters, ABC Politics, AFR, Al Jazeera English, FT Energy, WSJ Energy and regional media, plus selected US, Iran, Japan, Malaysia, Singapore, Thailand, industry, transport, agriculture, mining, construction, and union accounts. The monitor calls twitterapi.io's selected-account timeline endpoint for each `X_ACCOUNT_HANDLES` entry and scans tweets from the last 24 hours, capped at the most recent 25 tweets for individual/person accounts, 125 tweets for media accounts, and 5 tweets for nominated industry/union accounts by default. Older tweets are ignored even when the account has fewer tweets than its cap. It keeps only tweets matching `X_KEYWORDS` such as diesel, petrol, fuel, refineries, and the Strait of Hormuz, and filters obvious podcast/audio posts using phrases and domains such as Spotify, Apple Podcasts, SoundCloud, Acast, Omny, and similar links.
 
 ---
 

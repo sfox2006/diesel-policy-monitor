@@ -53,6 +53,16 @@ DEFAULT_X_MEDIA_ACCOUNT_HANDLES = (
     "abcpolitics,financialreview,AJEnglish,FTenergy,WSJenergy,australian"
 )
 
+DEFAULT_X_LOW_CAP_ACCOUNT_HANDLES = (
+    "accinews,bcacomau,cosboa,unionsaustralia,sallymcmanus,TWU,"
+    "TWUMichaelKaine,TWUAus,MichaelS_Guerin,graingrowersltd,cattleaus,"
+    "seafoodaus,mineralscouncil,MEUAustralia,AWUnion,_ACAPMA,shippingaus,"
+    "portsaustralia,RBTUnion,Austrail,MBA_Aust,CFMEU_CG,CFMEU,"
+    "CFMEUVicTas,AusFoodGrocery,theamwu"
+)
+
+DEFAULT_X_ACCOUNT_HANDLES = f"{DEFAULT_X_ACCOUNT_HANDLES},{DEFAULT_X_LOW_CAP_ACCOUNT_HANDLES}"
+
 DEFAULT_X_KEYWORDS = (
     "diesel,petrol,gasoline,gasoil,fuel,refinery,refineries,"
     "fuel security,Strait of Hormuz,Hormuz,fuel reserve,"
@@ -130,9 +140,16 @@ X_MEDIA_ACCOUNT_HANDLES: list[str] = [
     for handle in (_get("X_MEDIA_ACCOUNT_HANDLES") or DEFAULT_X_MEDIA_ACCOUNT_HANDLES).split(",")
     if handle.strip()
 ]
+X_LOW_CAP_ACCOUNT_HANDLES: list[str] = [
+    handle.strip().lstrip("@")
+    for handle in (_get("X_LOW_CAP_ACCOUNT_HANDLES") or DEFAULT_X_LOW_CAP_ACCOUNT_HANDLES).split(",")
+    if handle.strip()
+]
+X_ACCOUNT_HANDLES = list(dict.fromkeys([*X_ACCOUNT_HANDLES, *X_LOW_CAP_ACCOUNT_HANDLES]))
 X_DEFAULT_SCAN_LIMIT: int = max(1, min(_get_int("X_DEFAULT_SCAN_LIMIT", 25), 500))
 X_PERSON_SCAN_LIMIT: int = max(1, min(_get_int("X_PERSON_SCAN_LIMIT", 25), 500))
 X_MEDIA_SCAN_LIMIT: int = max(1, min(_get_int("X_MEDIA_SCAN_LIMIT", 125), 500))
+X_LOW_CAP_SCAN_LIMIT: int = max(1, min(_get_int("X_LOW_CAP_SCAN_LIMIT", 5), 500))
 X_LOOKBACK_HOURS: int = max(1, min(_get_int("X_LOOKBACK_HOURS", 24), 168))
 X_INCLUDE_RETWEETS: bool = _get("X_INCLUDE_RETWEETS", "false").lower() in {"1", "true", "yes"}
 X_SECTION_ITEMS: int = max(0, _get_int("X_SECTION_ITEMS", 8))

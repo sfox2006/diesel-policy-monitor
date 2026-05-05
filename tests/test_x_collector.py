@@ -177,6 +177,38 @@ class XCollectorTests(unittest.TestCase):
         self.assertEqual(get.call_count, 7)
         self.assertEqual(get.call_args_list[1].kwargs["params"]["cursor"], "cursor-1")
 
+    def test_collect_x_posts_uses_low_cap_scan_limit_before_other_categories(self) -> None:
+        recent = datetime.now(timezone.utc) - timedelta(hours=2)
+        tweets = [
+            {
+                "id": str(idx),
+                "text": f"Diesel policy update {idx}",
+                "createdAt": recent.isoformat(),
+                "author": {"userName": "mineralscouncil"},
+            }
+            for idx in range(20)
+        ]
+        response = Mock()
+        response.raise_for_status.return_value = None
+        response.json.return_value = {"tweets": tweets, "has_next_page": True, "next_cursor": "next"}
+
+        with patch.object(x_collector.config, "TWITTERAPI_IO_KEY", "token"), \
+            patch.object(x_collector.config, "X_ACCOUNT_HANDLES", ["mineralscouncil"]), \
+            patch.object(x_collector.config, "X_LOW_CAP_ACCOUNT_HANDLES", ["mineralscouncil"]), \
+            patch.object(x_collector.config, "X_PERSON_ACCOUNT_HANDLES", []), \
+            patch.object(x_collector.config, "X_MEDIA_ACCOUNT_HANDLES", ["mineralscouncil"]), \
+            patch.object(x_collector.config, "X_KEYWORDS", ["diesel"]), \
+            patch.object(x_collector.config, "X_LOW_CAP_SCAN_LIMIT", 5), \
+            patch.object(x_collector.config, "X_MEDIA_SCAN_LIMIT", 125), \
+            patch.object(x_collector.config, "X_LOOKBACK_HOURS", 24), \
+            patch.object(x_collector.config, "X_MAX_MATCHES_PER_ACCOUNT", 100), \
+            patch.object(x_collector.config, "X_INCLUDE_RETWEETS", False), \
+            patch("policy_monitor.collectors.x_collector.requests.get", return_value=response) as get:
+            items = x_collector.collect_x_posts()
+
+        self.assertEqual(len(items), 5)
+        get.assert_called_once()
+
     def test_collect_x_posts_uses_default_scan_limit_for_uncategorised_account(self) -> None:
         tweets = [
             {
