@@ -3,9 +3,10 @@ name: Daily Policy Briefing
 on:
   schedule:
     # GitHub schedules use UTC. These two runs straddle Sydney daylight saving:
-    # 20:00 UTC = 07:00 Sydney during daylight saving, 21:00 UTC = 07:00 otherwise.
-    - cron: '0 20 * * *'
-    - cron: '0 21 * * *'
+    # 20:07 UTC = 07:07 Sydney during daylight saving, 21:07 UTC = 07:07 otherwise.
+    # Avoiding minute 0 reduces GitHub's top-of-hour schedule delays.
+    - cron: '7 20 * * *'
+    - cron: '7 21 * * *'
   workflow_dispatch:  # Allow manual trigger from GitHub UI
 
 jobs:
@@ -35,7 +36,7 @@ jobs:
               # GitHub fired, not the exact wall-clock hour when the runner starts.
               schedule = os.environ.get("EVENT_SCHEDULE", "")
               offset_hours = datetime.now(ZoneInfo("Australia/Sydney")).utcoffset().total_seconds() / 3600
-              valid_schedule = "0 20 * * *" if offset_hours == 11 else "0 21 * * *"
+              valid_schedule = "7 20 * * *" if offset_hours == 11 else "7 21 * * *"
               print("true" if schedule == valid_schedule else "false")
           PY
           )
