@@ -58,7 +58,7 @@ DEFAULT_X_LOW_CAP_ACCOUNT_HANDLES = (
     "TWUMichaelKaine,TWUAus,MichaelS_Guerin,graingrowersltd,cattleaus,"
     "seafoodaus,mineralscouncil,MEUAustralia,AWUnion,_ACAPMA,shippingaus,"
     "portsaustralia,RBTUnion,Austrail,MBA_Aust,CFMEU_CG,CFMEU,"
-    "CFMEUVicTas,AusFoodGrocery,theamwu"
+    "CFMEUVicTas,AusFoodGrocery,theamwu,ICAus,asfaaust,ARA,ASUnion"
 )
 
 DEFAULT_X_ACCOUNT_HANDLES = f"{DEFAULT_X_ACCOUNT_HANDLES},{DEFAULT_X_LOW_CAP_ACCOUNT_HANDLES}"
