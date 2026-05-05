@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import logging
 import re
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from typing import Any
 
 import requests
@@ -211,17 +211,28 @@ def _is_low_signal_tweet_record(tweet: dict[str, Any], text: str) -> bool:
     return any(domain in url_text for domain in PODCAST_DOMAINS)
 
 
+def _scan_limit_for_handle(handle: str) -> int:
+    handle_key = handle.strip().lstrip("@").lower()
+    person_handles = {h.lower() for h in config.X_PERSON_ACCOUNT_HANDLES}
+    media_handles = {h.lower() for h in config.X_MEDIA_ACCOUNT_HANDLES}
+    if handle_key in media_handles:
+        return config.X_MEDIA_SCAN_LIMIT
+    if handle_key in person_handles:
+        return config.X_PERSON_SCAN_LIMIT
+    return config.X_DEFAULT_SCAN_LIMIT
+
+
 def _iter_account_tweets(
     handle: str,
     headers: dict[str, str],
-    cutoff: datetime,
+    scan_limit: int,
 ) -> list[dict[str, Any]]:
     tweets: list[dict[str, Any]] = []
     cursor = ""
     pages_fetched = 0
-    stopped_by_page_cap = False
+    max_pages = (scan_limit + 19) // 20
 
-    while pages_fetched < config.X_MAX_SCAN_PAGES_PER_ACCOUNT:
+    while len(tweets) < scan_limit and pages_fetched < max_pages:
         params = {"userName": handle, "includeReplies": "false"}
         if cursor:
             params["cursor"] = cursor
@@ -235,30 +246,15 @@ def _iter_account_tweets(
         resp.raise_for_status()
         payload = resp.json()
         pages_fetched += 1
-        page_records = _tweet_records(payload)
-        reached_cutoff = False
 
-        for tweet in page_records:
-            published = _created_at(tweet)
-            if published and published.astimezone(timezone.utc) < cutoff:
-                reached_cutoff = True
-                continue
+        for tweet in _tweet_records(payload):
             tweets.append(tweet)
+            if len(tweets) >= scan_limit:
+                break
 
         cursor = str(payload.get("next_cursor") or "")
-        if reached_cutoff:
-            break
         if not payload.get("has_next_page") or not cursor:
             break
-        if pages_fetched >= config.X_MAX_SCAN_PAGES_PER_ACCOUNT:
-            stopped_by_page_cap = True
-
-    if stopped_by_page_cap:
-        logger.warning(
-            "Stopped @%s after %d twitterapi.io page(s); increase X_MAX_SCAN_PAGES_PER_ACCOUNT to scan deeper",
-            handle,
-            config.X_MAX_SCAN_PAGES_PER_ACCOUNT,
-        )
 
     return tweets
 
@@ -303,16 +299,12 @@ def collect_x_posts() -> list[PolicyItem]:
     headers = {"X-API-Key": config.TWITTERAPI_IO_KEY}
     items: list[PolicyItem] = []
     seen: set[str] = set()
-    cutoff = datetime.now(timezone.utc) - timedelta(hours=config.X_LOOKBACK_HOURS)
 
     for handle in config.X_ACCOUNT_HANDLES:
-        logger.info(
-            "Fetching tweets since %s for @%s via twitterapi.io",
-            cutoff.strftime("%Y-%m-%d %H:%M UTC"),
-            handle,
-        )
+        scan_limit = _scan_limit_for_handle(handle)
+        logger.info("Fetching up to %d recent tweets for @%s via twitterapi.io", scan_limit, handle)
         try:
-            tweets = _iter_account_tweets(handle, headers, cutoff)
+            tweets = _iter_account_tweets(handle, headers, scan_limit)
         except requests.RequestException as exc:
             logger.error("twitterapi.io fetch failed for @%s: %s", handle, exc)
             continue

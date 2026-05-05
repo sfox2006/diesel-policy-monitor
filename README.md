@@ -140,13 +140,14 @@ X_PERSON_ACCOUNT_HANDLES # handles scanned with the person limit
 X_MEDIA_ACCOUNT_HANDLES  # handles scanned with the media limit
 X_KEYWORDS            # comma-separated local keyword filter
 X_MAX_MATCHES_PER_ACCOUNT # default 500 matching tweets kept per account
-X_MAX_SCAN_PAGES_PER_ACCOUNT # default 100 twitterapi.io pages per account safety cap
-X_LOOKBACK_HOURS      # default 24 for X account scanning, max 168
+X_DEFAULT_SCAN_LIMIT  # default 25 recent tweets for uncategorised accounts
+X_PERSON_SCAN_LIMIT   # default 25 recent tweets for individual/person accounts
+X_MEDIA_SCAN_LIMIT    # default 125 recent tweets for media accounts
 X_INCLUDE_RETWEETS    # default false
 X_SECTION_ITEMS       # default 8
 ```
 
-The default account watchlist includes Australian ministers/regulators, energy and shipping bodies, Reuters, ABC Politics, AFR, Al Jazeera English, FT Energy, WSJ Energy and regional media, plus selected US, Iran, Japan, Malaysia, Singapore, and Thailand accounts. The monitor calls twitterapi.io's selected-account timeline endpoint for each `X_ACCOUNT_HANDLES` entry and paginates until it reaches tweets older than `X_LOOKBACK_HOURS` (24 hours by default). It keeps only tweets matching `X_KEYWORDS` such as diesel, petrol, fuel, refineries, and the Strait of Hormuz, and filters obvious podcast/audio posts using phrases and domains such as Spotify, Apple Podcasts, SoundCloud, Acast, Omny, and similar links.
+The default account watchlist includes Australian ministers/regulators, energy and shipping bodies, Reuters, ABC Politics, AFR, Al Jazeera English, FT Energy, WSJ Energy and regional media, plus selected US, Iran, Japan, Malaysia, Singapore, and Thailand accounts. The monitor calls twitterapi.io's selected-account timeline endpoint for each `X_ACCOUNT_HANDLES` entry and scans the most recent 25 tweets for individual/person accounts and 125 tweets for media accounts by default. It keeps only tweets matching `X_KEYWORDS` such as diesel, petrol, fuel, refineries, and the Strait of Hormuz, and filters obvious podcast/audio posts using phrases and domains such as Spotify, Apple Podcasts, SoundCloud, Acast, Omny, and similar links.
 
 ---
 
